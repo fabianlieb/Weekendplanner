@@ -685,3 +685,110 @@ button.card {
   font-size: 12px;
   color: var(--muted);
 }
+
+.card-weather {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+table.hours {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+table.hours th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+table.hours td {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 8px 0;
+}
+
+.panel {
+  border: 1px solid var(--ink);
+  padding: 14px;
+}
+
+.choice.compact > button {
+  font-size: 13px;
+  padding: 0 4px;
+}
+
+.btn-icon {
+  width: var(--touch);
+  min-width: var(--touch);
+  padding: 0;
+  flex: none;
+}
+
+.btn-icon.tall {
+  width: 52px;
+  height: 52px;
+}
+
+table.travel {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.travel th,
+table.travel td {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--hair);
+  vertical-align: middle;
+}
+
+table.travel thead th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  border-bottom: 1px solid var(--ink);
+}
+
+table.travel tbody th {
+  text-align: left;
+  font-weight: 400;
+  padding-right: 8px;
+}
+
+table.travel tbody th .name {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+table.travel td {
+  width: 76px;
+  padding-left: 6px;
+}
+
+table.travel td .input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+table.travel td .input::placeholder {
+  color: #a0a0a0;
+}

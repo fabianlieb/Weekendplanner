@@ -5,7 +5,7 @@ import { deleteCandidate, getProfile, listCandidates, newId, saveCandidate } fro
 import { travelFor } from '../../engine/suggest';
 import type { Candidate, CandidateKind, Profile } from '../../engine/types';
 import { Choice, Field, Section, showToast, useAsync } from '../components';
-import { formatCoordinates, parseCoordinates, swisstopoUrl } from '../geo';
+import { formatCoordinates, googleMapsUrl, parseCoordinatesOrLink as parseCoordinates, swisstopoUrl } from '../geo';
 import { KIND_LABEL } from '../labels';
 import { navigate } from '../router';
 
@@ -31,6 +31,7 @@ interface Draft {
   link: string;
   photoSpotIds: string[];
   gpx?: string;
+  parkingCoords: string;
 }
 
 const KINDS: CandidateKind[] = ['ski_tour', 'snowshoe_trail', 'ski_resort', 'photo_spot'];
@@ -68,6 +69,7 @@ function toDraft(c: Candidate | undefined, kind: CandidateKind): Draft {
     link: c?.link ?? '',
     photoSpotIds: c?.photoSpotIds ?? [],
     ...(c?.gpx ? { gpx: c.gpx } : {}),
+    parkingCoords: c?.parking ? formatCoordinates(c.parking) : '',
   };
 }
 
@@ -102,6 +104,7 @@ function fromDraft(d: Draft): Record<string, unknown> {
     ...opt('link', d.link.trim()),
     ...opt('photoSpotIds', d.photoSpotIds.length ? d.photoSpotIds : undefined, d.kind !== 'photo_spot'),
     ...opt('gpx', d.gpx, isTour),
+    ...opt('parking', parseCoordinates(d.parkingCoords)),
   };
 }
 
@@ -130,6 +133,7 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
     const c = validateCandidate(fromDraft(d), 'Eintrag', e);
     if (!parseCoordinates(d.valleyCoords)) e.add(labels.valley, 'Koordinaten nicht lesbar');
     if (!parseCoordinates(d.summitCoords)) e.add(labels.summit, 'Koordinaten nicht lesbar');
+    if (d.parkingCoords.trim() && !parseCoordinates(d.parkingCoords)) e.add('Parkplatz', 'Koordinaten nicht lesbar');
     if (!c || e.list.length) {
       setErrors([...new Set(e.list.map((m) => m.replace(/^Eintrag\.?/, '').replace(/^: /, '')))]);
       return;
@@ -192,6 +196,8 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
         onElevation={(summitElevation) => set({ summitElevation })}
         idPrefix="s"
       />
+
+      <ParkingField value={d.parkingCoords} onChange={(parkingCoords) => set({ parkingCoords })} kind={d.kind} />
 
       <Section title="Aufwand">
         <div className="grid-2">
@@ -312,7 +318,7 @@ function PointFields(props: {
   return (
     <Section title={props.title}>
       {props.hint && <span className="tiny muted">{props.hint}</span>}
-      <Field label="Koordinaten" hint="WGS84 (46.8, 9.83) oder LV95 aus swisstopo" htmlFor={`${props.idPrefix}-coords`}>
+      <Field label="Koordinaten" hint="swisstopo-Link einfügen, LV95 (2'683'000, 1'248'000) oder WGS84 (46.8, 9.83)" htmlFor={`${props.idPrefix}-coords`}>
         <input
           id={`${props.idPrefix}-coords`}
           className="input"
@@ -322,6 +328,7 @@ function PointFields(props: {
           onChange={(e) => props.onCoords(e.target.value)}
         />
       </Field>
+      {parsed && /https?:/.test(props.coords) && <span className="tiny">Gelesen: {formatCoordinates(parsed)}</span>}
       <div className="row">
         <Field label="Höhe (m ü. M.)" htmlFor={`${props.idPrefix}-elev`}>
           <input id={`${props.idPrefix}-elev`} className="input" inputMode="numeric" value={props.elevation} onChange={(e) => props.onElevation(e.target.value)} />
@@ -367,6 +374,29 @@ function TravelFields({ profile, draft, onChange }: { profile: Profile; draft: D
         })}
       </div>
       <span className="tiny muted">Leer = Schätzung aus der Luftlinie (wird als «geschätzt» angezeigt).</span>
+    </Section>
+  );
+}
+
+function ParkingField({ value, onChange, kind }: { value: string; onChange: (v: string) => void; kind: CandidateKind }) {
+  const parsed = parseCoordinates(value);
+  return (
+    <Section title="Parkplatz" aside="optional, für die Navigation">
+      <Field
+        label="Koordinaten"
+        hint={`swisstopo-Link oder Koordinaten. Leer = Navigation zum ${kind === 'photo_spot' ? 'Fotostandort' : 'Startpunkt'}.`}
+        htmlFor="p-coords"
+      >
+        <input id="p-coords" className="input" inputMode="url" value={value} aria-invalid={value !== '' && !parsed} onChange={(e) => onChange(e.target.value)} />
+      </Field>
+      {parsed && (
+        <div className="row">
+          <span className="small grow">{formatCoordinates(parsed)}</span>
+          <a className="btn" href={googleMapsUrl(parsed)} target="_blank" rel="noreferrer">
+            In Google Maps prüfen
+          </a>
+        </div>
+      )}
     </Section>
   );
 }

@@ -1,5 +1,5 @@
 import { DAY_LABEL } from '../engine/texts';
-import type { DayKey, ExclusionReason, IsoDate } from '../engine/types';
+import type { Activity, DayKey, ExclusionReason, IsoDate, Slot, WeatherSummary } from '../engine/types';
 
 export function formatDuration(minutes: number): string {
   const m = Math.round(minutes / 5) * 5;
@@ -46,4 +46,26 @@ export function summaryText(summary: Partial<Record<ExclusionReason, number>> | 
   }
   const parts = [...merged.entries()].sort((a, b) => b[1] - a[1]).slice(0, max);
   return parts.length ? parts.map(([l, n]) => `${n} × ${l}`).join(', ') : undefined;
+}
+
+const signed = (n: number) => (n < 0 ? `−${Math.abs(n)}` : String(n));
+
+/** «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee · Nebelmeer wahrscheinlich» */
+export function weatherLine(w: WeatherSummary, activity: Activity, slot: Slot): string {
+  const parts = [`${signed(w.temperature)} °C`, `Böen ${w.maxGust} km/h`];
+  if (slot === 'day' && activity !== 'photo' && w.sunshineHours !== undefined) {
+    const h = Math.round(w.sunshineHours);
+    parts.push(h === 0 ? 'kaum Sonne' : `${h} h Sonne`);
+  } else {
+    parts.push(`Bewölkung ${w.cloudCover} %`);
+  }
+  if (activity !== 'photo' && w.newSnowCm >= 1) parts.push(`${w.newSnowCm} cm Neuschnee`);
+  if (w.moonIllumination !== undefined) parts.push(`Mond ${Math.round(w.moonIllumination * 100)} %`);
+  if (w.precipitationMm >= 1) parts.push(`${String(w.precipitationMm).replace('.', ',')} mm Niederschlag`);
+  if (w.fogSeaLikely) parts.push('Nebelmeer wahrscheinlich');
+  return parts.join(' · ');
+}
+
+export function signedTemp(n: number): string {
+  return `${signed(n)}°`;
 }

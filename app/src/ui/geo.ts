@@ -1,3 +1,5 @@
+import type { Candidate } from '../engine/types';
+
 // Coordinates: parse user input (WGS84 or Swiss LV95) and build swisstopo links.
 // LV95 conversion uses swisstopo's published approximate formulas (accuracy ~1 m).
 
@@ -48,4 +50,38 @@ export function formatCoordinates(p: LatLon): string {
 export function swisstopoUrl(p: LatLon, zoom = 7): string {
   const { e, n } = wgs84ToLv95(p);
   return `https://map.geo.admin.ch/#/map?lang=de&center=${e},${n}&z=${zoom}&crosshair=marker&bgLayer=ch.swisstopo.pixelkarte-farbe&topic=ech`;
+}
+
+/** Google Maps directions (driving) to a point; opens the Google Maps app if installed. */
+export function googleMapsUrl(p: LatLon): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${p.lat.toFixed(5)},${p.lon.toFixed(5)}&travelmode=driving`;
+}
+
+/** Where to drive to: parking if stored, else the start (tours, trails, resorts) or the photo position. */
+export function navigationTarget(c: Candidate): { point: LatLon; label: string } {
+  if (c.parking) return { point: c.parking, label: 'Parkplatz' };
+  if (c.kind === 'photo_spot') return { point: c.summit, label: 'Fotostandort' };
+  return { point: c.valley, label: c.kind === 'ski_resort' ? 'Talstation' : 'Startpunkt' };
+}
+
+/**
+ * Coordinates from a swisstopo map link (map.geo.admin.ch): new viewer `#/map?…center=E,N…`,
+ * legacy `?E=…&N=…` or `?swisssearch=lat,lon`. Undefined if the text is no such link.
+ */
+export function parseSwisstopoLink(text: string): LatLon | undefined {
+  const t = text.trim();
+  if (!/geo\.admin\.ch/.test(t)) return undefined;
+  const center = t.match(/[?&#]center=([\d.]+)(?:,|%2C)([\d.]+)/i);
+  if (center) return parseCoordinates(`${center[1]} ${center[2]}`);
+  const e = t.match(/[?&#]E=([\d.]+)/);
+  const n = t.match(/[?&#]N=([\d.]+)/);
+  if (e && n) return parseCoordinates(`${e[1]} ${n[1]}`);
+  const search = t.match(/swisssearch=([^&#]+)/i);
+  if (search?.[1]) return parseCoordinates(decodeURIComponent(search[1]));
+  return undefined;
+}
+
+/** Accepts coordinates or a swisstopo link. */
+export function parseCoordinatesOrLink(text: string): LatLon | undefined {
+  return parseSwisstopoLink(text) ?? parseCoordinates(text);
 }

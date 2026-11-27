@@ -4,7 +4,7 @@ import { candidates, freshRisks, input, profile } from '../engine/__fixtures__/s
 import { BACKUP_FORMAT, exportData, importJson, validateImport } from './backup';
 import { PlannerDB } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
-import { adoptAlternative, chosenSuggestion, computeSuggestions, feedbackWeekend, runEveningCheck, summariseExclusions, weekendKey } from './planner';
+import { HERE, adoptAlternative, chosenSuggestion, computeSuggestions, feedbackWeekend, needsAutoCompute, resolveStartPoint, runEveningCheck, summariseExclusions, weekendKey } from './planner';
 import {
   DEFAULT_PROFILE,
   choosePlan,
@@ -210,6 +210,38 @@ describe('planner (storage + weather + engine)', () => {
     expect(feedbackWeekend('2026-12-11')).toBe('2026-12-05'); // Fri
   });
 
+  it('current location snaps to a nearby saved start point, else becomes an ad-hoc start point', () => {
+    const saved = profile.startPoints;
+    const nearHome = { lat: 47.38, lon: 8.55 };
+    expect(resolveStartPoint(HERE, saved, nearHome)).toMatchObject({ startPoint: { id: 'home' }, adhoc: false, usedLocation: true });
+    const far = { lat: 46.5, lon: 7.0 };
+    expect(resolveStartPoint(HERE, saved, far)).toMatchObject({ startPoint: { id: HERE, name: 'Standort', lat: 46.5 }, adhoc: true });
+    expect(resolveStartPoint(HERE, saved, undefined)).toMatchObject({ startPoint: { id: 'home' }, usedLocation: false });
+    expect(resolveStartPoint('cabin', saved, nearHome)).toMatchObject({ startPoint: { id: 'cabin' }, usedLocation: false });
+    expect(resolveStartPoint(HERE, [], undefined).startPoint).toBeUndefined();
+  });
+
+  it('an ad-hoc start point is stored with the plan and used by the evening check', async () => {
+    await seed();
+    const here = { id: HERE, name: 'Standort', lat: 47.05, lon: 9.0 };
+    const { plan } = await computeSuggestions(db, { ...input, startPointId: HERE }, { now: THURSDAY, fetchFn: weatherFetch(), extraStartPoint: here });
+    expect(plan.startPoint).toEqual(here);
+    expect(plan.suggestions.length).toBeGreaterThan(0);
+    expect(plan.suggestions.every((s) => s.travel.startPointName === 'Standort' && s.travel.estimated)).toBe(true);
+    await choosePlan(db, plan.weekend, plan.suggestions[0]!.id);
+    const check = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch() });
+    expect(check.status).toBe('checked');
+  });
+
+  it('auto-compute only without plan, or for an unchosen plan from another day', async () => {
+    await seed();
+    expect(needsAutoCompute(undefined, '2026-12-03')).toBe(true);
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    expect(needsAutoCompute(plan, '2026-12-03')).toBe(false);
+    expect(needsAutoCompute(plan, '2026-12-04')).toBe(true);
+    expect(needsAutoCompute({ ...plan, chosenId: plan.suggestions[0]!.id }, '2026-12-04')).toBe(false);
+  });
+
   it('weekend key', () => {
     expect(weekendKey('2026-12-03')).toBe('2026-12-05');
     expect(weekendKey('2026-12-06')).toBe('2026-12-06');
@@ -285,6 +317,12 @@ describe('backup export/import', () => {
       expect(r.errors.join()).toContain('Höhenmeter fehlen');
       expect(r.errors.join()).toContain('Link muss');
     }
+  });
+
+  it('accepts an optional parking point and rejects a broken one', () => {
+    const ok = validateImport([{ ...candidates[0]!, parking: { lat: 47.09, lon: 9.28 } }]);
+    expect(ok.ok && ok.data.candidates[0]?.parking).toEqual({ lat: 47.09, lon: 9.28 });
+    expect(validateImport([{ ...candidates[0]!, parking: { lat: 'x' } }]).ok).toBe(false);
   });
 
   it('rejects invalid risk colours (no own risk values can be smuggled in)', () => {

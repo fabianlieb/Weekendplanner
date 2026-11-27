@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { validateImport } from './backup';
 
 const readme = readFileSync(join(__dirname, '..', '..', 'README.md'), 'utf8');
-const blocks = [...readme.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1] ?? '') as unknown);
+const blocks = [...readme.matchAll(/```json\r?\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1] ?? '') as unknown);
 
 describe('README JSON examples', () => {
   it('contains a candidate list and a backup example', () => {

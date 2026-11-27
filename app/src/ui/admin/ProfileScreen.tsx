@@ -4,7 +4,7 @@ import { getProfile, newId, saveProfile } from '../../data/repositories';
 import type { Equipment, Profile, RiskLevel, StartPoint } from '../../engine/types';
 import { formatTime, parseTime } from '../../engine/util';
 import { Choice, Field, Notice, Section, showToast, useAsync } from '../components';
-import { formatCoordinates, parseCoordinates } from '../geo';
+import { formatCoordinates, parseCoordinatesOrLink as parseCoordinates } from '../geo';
 import { EQUIPMENT_HINT, EQUIPMENT_LABEL, RISK_LEVEL_LABEL } from '../labels';
 import { navigate } from '../router';
 
@@ -134,7 +134,7 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
             <Field label="Name" htmlFor={`sp-name-${i}`}>
               <input id={`sp-name-${i}`} className="input" value={s.name} onChange={(e) => setPoint(i, { name: e.target.value })} />
             </Field>
-            <Field label="Koordinaten" hint="WGS84 (47.3769, 8.5417) oder LV95 aus swisstopo" htmlFor={`sp-coords-${i}`}>
+            <Field label="Koordinaten" hint="swisstopo-Link, LV95 (2'683'000, 1'248'000) oder WGS84 (47.3769, 8.5417)" htmlFor={`sp-coords-${i}`}>
               <input id={`sp-coords-${i}`} className="input" inputMode="decimal" value={s.coords} placeholder="47.3769, 8.5417" onChange={(e) => setPoint(i, { coords: e.target.value })} />
             </Field>
             <div className="row">

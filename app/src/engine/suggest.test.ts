@@ -114,6 +114,18 @@ describe('stage 4 – selection', () => {
     }
   });
 
+  it('each suggestion carries weather numbers for its window', () => {
+    for (const s of result.suggestions) {
+      expect(s.weather, s.id).toBeDefined();
+      expect(s.weather!.hours.length).toBeGreaterThan(0);
+      expect(s.weather!.temperature).toBe(-6);
+      expect(s.weather!.maxGust).toBe(20);
+      expect(s.weather!.newSnowCm).toBe(12);
+    }
+    const photo = suggest(context({ candidates: candidates.filter((c) => c.id === 'chaeserrugg') })).suggestions[0]!;
+    expect(photo.weather?.fogSeaLikely).toBe(true);
+  });
+
   it('suggestions are sorted by score', () => {
     const scores = result.suggestions.map((s) => s.score);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);

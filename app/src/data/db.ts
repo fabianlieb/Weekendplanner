@@ -9,6 +9,7 @@ import type {
   PlanB,
   PointDayWeather,
   RiskEntry,
+  StartPoint,
   Suggestion,
   WeekendInput,
 } from '../engine/types';
@@ -47,6 +48,8 @@ export interface WeekendPlan {
   /** Number of candidates not suggested at all, per reason (a candidate may count for several). */
   excludedSummary?: Partial<Record<ExclusionReason, number>>;
   weather?: { fetchedAt?: string; fromStaleCache: boolean; error?: string };
+  /** Ad-hoc start point (current location) the plan was computed from. */
+  startPoint?: StartPoint;
 }
 
 export interface WeatherCacheRow {

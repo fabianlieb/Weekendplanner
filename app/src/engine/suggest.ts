@@ -11,6 +11,7 @@ import { PLAN_B_REASON, activityLabel } from './texts';
 import { THRESHOLDS } from './thresholds';
 import { computeTiming } from './timing';
 import { travelFor } from './travel';
+import { weatherSummary } from './weatherSummary';
 export { travelFor } from './travel';
 import type {
   Activity,
@@ -192,6 +193,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
         }
 
         const risk = buildRiskInfo(c, riskStatus, date);
+        const ws = w ? weatherSummary({ candidate: c, weather: w, date, window: timing.window, slot, astro: astroSummit }) : undefined;
         const fit = fitScore(c, cap, input.dayForm);
         const riskPenalty = risk.color ? THRESHOLDS.scoring.riskPenalty[risk.color] : 0;
         const total = THRESHOLDS.scoring.conditionWeight * cond.score + THRESHOLDS.scoring.fitWeight * fit - riskPenalty;
@@ -216,6 +218,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
           ...(photo ? { photo } : {}),
           ...(c.priceChf !== undefined ? { priceChf: c.priceChf } : {}),
           risk,
+          ...(ws ? { weather: ws } : {}),
           isNew: !c.done,
           avalancheDependent: needsAvalancheRating(c),
         };

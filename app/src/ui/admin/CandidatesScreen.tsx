@@ -42,9 +42,14 @@ export function CandidatesScreen() {
 
   return (
     <div className="stack">
-      <button type="button" className="btn btn-dark" onClick={() => navigate('admin', { tab: 'list', edit: 'new' })}>
-        Neuer Eintrag
-      </button>
+      <div className="grid-2">
+        <button type="button" className="btn btn-dark" onClick={() => navigate('admin', { tab: 'list', edit: 'new' })}>
+          Neuer Eintrag
+        </button>
+        <button type="button" className="btn" disabled={candidates.length === 0} onClick={() => navigate('admin', { tab: 'list', travel: '1' })}>
+          Anreisezeiten
+        </button>
+      </div>
 
       {candidates.length === 0 && (
         <Notice>

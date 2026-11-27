@@ -129,6 +129,11 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
   const link = optional(v, 'link', isStr, path, e, 'muss Text sein');
   const gpx = optional(v, 'gpx', isStr, path, e, 'muss Text sein');
   const photoSpotIds = optional(v, 'photoSpotIds', isStrArray, path, e, 'muss eine Liste von IDs sein');
+  let parking: { lat: number; lon: number } | undefined;
+  if (v.parking !== undefined && v.parking !== null) {
+    if (isObj(v.parking) && isNum(v.parking.lat, -90, 90) && isNum(v.parking.lon, -180, 180)) parking = { lat: v.parking.lat, lon: v.parking.lon };
+    else e.add(`${path}.parking`, 'Parkplatz braucht lat und lon');
+  }
   if ((kind === 'ski_tour' || kind === 'snowshoe_trail') && elevationGain === undefined) e.add(`${path}.elevationGain`, 'Höhenmeter fehlen');
   if (link && !/^https?:\/\//.test(link)) e.add(`${path}.link`, 'Link muss mit http:// oder https:// beginnen');
 
@@ -153,6 +158,7 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
     ...(link !== undefined ? { link } : {}),
     ...(gpx !== undefined ? { gpx } : {}),
     ...(photoSpotIds !== undefined ? { photoSpotIds } : {}),
+    ...(parking ? { parking } : {}),
   };
 }
 

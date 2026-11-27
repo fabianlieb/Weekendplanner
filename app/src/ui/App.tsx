@@ -11,8 +11,7 @@ import { CheckView } from './weekend/CheckView';
 import { DetailView } from './weekend/DetailView';
 import { FeedbackView } from './weekend/FeedbackView';
 import { StatsView } from './weekend/StatsView';
-import { SuggestionsView } from './weekend/SuggestionsView';
-import { ThursdayView } from './weekend/ThursdayView';
+import { WeekendView } from './weekend/WeekendView';
 
 const TABS: { view: View; label: string; matches: View[] }[] = [
   { view: 'thursday', label: 'Wochenende', matches: ['thursday', 'suggestions', 'detail'] },
@@ -76,9 +75,6 @@ export function App() {
     case 'admin':
       content = <AdminView params={route.params} />;
       break;
-    case 'suggestions':
-      content = <SuggestionsView />;
-      break;
     case 'detail':
       content = <DetailView key={route.params.id} id={route.params.id} />;
       break;
@@ -92,7 +88,8 @@ export function App() {
       content = <StatsView />;
       break;
     default:
-      content = <ThursdayView />;
+      // 'thursday' and 'suggestions': suggestions right away, settings via «Anpassen»
+      content = <WeekendView />;
   }
 
   return (

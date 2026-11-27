@@ -2,7 +2,7 @@ import type { PlanB, RiskInfo, Suggestion } from '../../engine/types';
 import { formatTime } from '../../engine/util';
 import { DAY_SHORT, DAY_LABEL } from '../../engine/texts';
 import { RiskBadge } from '../components';
-import { formatDuration } from '../format';
+import { formatDuration, weatherLine } from '../format';
 import { navigate } from '../router';
 
 function riskShort(r: RiskInfo): string | undefined {
@@ -57,6 +57,7 @@ export function SuggestionCard({
       ) : (
         <span className="card-text">{s.reasons.join(' ')}</span>
       )}
+      {s.weather && <span className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</span>}
       <span className="card-meta">
         {meta.join(' · ')}
         {linked ? ' · Details ›' : ''}

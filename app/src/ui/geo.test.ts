@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { formatCoordinates, lv95ToWgs84, parseCoordinates, swisstopoUrl, wgs84ToLv95 } from './geo';
+import { formatCoordinates, googleMapsUrl, lv95ToWgs84, navigationTarget, parseCoordinates, parseCoordinatesOrLink, parseSwisstopoLink, swisstopoUrl, wgs84ToLv95 } from './geo';
+import { candidates } from '../engine/__fixtures__/scenario';
 
 describe('coordinates', () => {
   it('converts the LV95 origin (Bern, old observatory)', () => {
@@ -41,5 +42,24 @@ describe('coordinates', () => {
   it('formats and links', () => {
     expect(formatCoordinates({ lat: 47.37691, lon: 8.54167 })).toBe('47.3769, 8.5417');
     expect(swisstopoUrl({ lat: 46.95108, lon: 7.43864 })).toMatch(/^https:\/\/map\.geo\.admin\.ch\/#\/map\?lang=de&center=26000\d\d,12000\d\d&z=7&crosshair=marker&/);
+  });
+
+  it('reads coordinates from swisstopo links (new viewer, legacy, swisssearch)', () => {
+    const fresh = parseSwisstopoLink('https://map.geo.admin.ch/#/map?lang=de&center=2683000,1248000&z=8&bgLayer=ch.swisstopo.pixelkarte-farbe');
+    expect(fresh?.lat).toBeCloseTo(47.374, 2);
+    expect(fresh?.lon).toBeCloseTo(8.539, 2);
+    expect(parseSwisstopoLink('https://map.geo.admin.ch/?lang=de&E=2683000&N=1248000&zoom=10')).toEqual(fresh);
+    expect(parseSwisstopoLink('https://map.geo.admin.ch/?swisssearch=46.95,7.44')).toEqual({ lat: 46.95, lon: 7.44 });
+    expect(parseSwisstopoLink('https://www.google.com/maps/@47.1,9.2,12z')).toBeUndefined();
+    expect(parseCoordinatesOrLink('47.3769, 8.5417')).toEqual({ lat: 47.3769, lon: 8.5417 });
+  });
+
+  it('navigates to parking, else start or photo position', () => {
+    const tour = candidates.find((c) => c.kind === 'ski_tour')!;
+    expect(navigationTarget(tour)).toEqual({ point: tour.valley, label: 'Startpunkt' });
+    expect(navigationTarget({ ...tour, parking: { lat: 46.7, lon: 9.9 } })).toEqual({ point: { lat: 46.7, lon: 9.9 }, label: 'Parkplatz' });
+    const spot = candidates.find((c) => c.kind === 'photo_spot')!;
+    expect(navigationTarget(spot).point).toEqual(spot.summit);
+    expect(googleMapsUrl({ lat: 46.7, lon: 9.9 })).toBe('https://www.google.com/maps/dir/?api=1&destination=46.70000,9.90000&travelmode=driving');
   });
 });

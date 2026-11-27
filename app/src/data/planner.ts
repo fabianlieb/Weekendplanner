@@ -2,16 +2,59 @@
 
 import { eveningCheck, type CheckResult } from '../engine/eveningCheck';
 import { evaluateOptions, suggest } from '../engine/suggest';
-import type { Exclusion, ExclusionReason, IsoDate, PlanB, Suggestion, WeekendInput } from '../engine/types';
+import type { Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
-import { addDays, upcomingWeekend, weekday, zurichToday } from '../engine/util';
+import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
-import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, saveLastInput, saveWeekendPlan } from './repositories';
+import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, saveWeekendPlan } from './repositories';
 import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './weatherService';
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
+  /** Ad-hoc start point (current location) used for this computation and stored with the plan. */
+  extraStartPoint?: StartPoint;
+}
+
+/** Start point id meaning «current location». */
+export const HERE = 'here';
+/** A saved start point closer than this (km) to the current location is used instead. */
+export const SNAP_TO_SAVED_KM = 10;
+
+/**
+ * Resolves the start point choice: a saved start point, or the current location
+ * (snapped to a nearby saved start point so its manual travel times apply).
+ * Without a location, falls back to `fallbackId` or the first saved start point.
+ */
+export function resolveStartPoint(
+  choice: string,
+  saved: readonly StartPoint[],
+  position: { lat: number; lon: number } | undefined,
+  fallbackId?: string,
+): { startPoint: StartPoint | undefined; adhoc: boolean; usedLocation: boolean } {
+  if (choice !== HERE) {
+    const sp = saved.find((s) => s.id === choice) ?? saved[0];
+    return { startPoint: sp, adhoc: false, usedLocation: false };
+  }
+  if (position) {
+    let nearest: StartPoint | undefined;
+    let best = Infinity;
+    for (const s of saved) {
+      const d = haversineKm(s, position);
+      if (d < best) {
+        best = d;
+        nearest = s;
+      }
+    }
+    if (nearest && best <= SNAP_TO_SAVED_KM) return { startPoint: nearest, adhoc: false, usedLocation: true };
+    return { startPoint: { id: HERE, name: 'Standort', lat: position.lat, lon: position.lon }, adhoc: true, usedLocation: true };
+  }
+  return { startPoint: saved.find((s) => s.id === fallbackId) ?? saved[0], adhoc: false, usedLocation: false };
+}
+
+function withStartPoint(profile: Profile, sp: StartPoint | undefined): Profile {
+  if (!sp || profile.startPoints.some((s) => s.id === sp.id)) return profile;
+  return { ...profile, startPoints: [...profile.startPoints, sp] };
 }
 
 export function weekendKey(today: IsoDate): IsoDate {
@@ -53,7 +96,8 @@ export interface ComputeResult {
 export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opts: PlannerOptions = {}): Promise<ComputeResult> {
   const now = opts.now ?? new Date();
   const today = zurichToday(now);
-  const [profile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const [savedProfile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const profile = withStartPoint(savedProfile, opts.extraStartPoint);
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { ...opts, now });
 
@@ -74,10 +118,19 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     checks: previous?.checks ?? [],
     excludedSummary: summariseExclusions(result.excluded, validIds),
     weather: weatherMeta,
+    ...(opts.extraStartPoint ? { startPoint: opts.extraStartPoint } : {}),
   };
   await saveWeekendPlan(db, plan);
-  await saveLastInput(db, input);
   return { plan, weather: weatherMeta };
+}
+
+/**
+ * Opening the weekend screen computes automatically when there is no plan yet, or when the plan
+ * is from an earlier day and nothing is chosen. A chosen plan is never replaced silently.
+ */
+export function needsAutoCompute(plan: WeekendPlan | undefined, today: IsoDate): boolean {
+  if (!plan) return true;
+  return !plan.chosenId && plan.computedOn !== today;
 }
 
 export function chosenSuggestion(plan: WeekendPlan): Suggestion | undefined {
@@ -107,7 +160,8 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   if (!chosen) return { status: 'no_choice', plan };
   if (chosen.date < today) return { status: 'past', plan, chosen };
 
-  const [profile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const [savedProfile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const profile = withStartPoint(savedProfile, plan.startPoint);
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback };

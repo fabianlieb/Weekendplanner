@@ -5,6 +5,7 @@ import { CandidateEditor } from './CandidateEditor';
 import { CandidatesScreen } from './CandidatesScreen';
 import { ProfileScreen } from './ProfileScreen';
 import { RiskScreen } from './RiskScreen';
+import { TravelTable } from './TravelTable';
 
 type Tab = 'profile' | 'list' | 'risk' | 'backup';
 const TABS: { value: Tab; label: string }[] = [
@@ -17,6 +18,7 @@ const TABS: { value: Tab; label: string }[] = [
 export function AdminView({ params }: { params: Record<string, string> }) {
   const tab = (TABS.some((t) => t.value === params.tab) ? params.tab : 'risk') as Tab;
 
+  if (tab === 'list' && params.travel === '1') return <TravelTable />;
   if (tab === 'list' && params.edit !== undefined) {
     return <CandidateEditor id={params.edit === 'new' ? undefined : params.edit} kind={params.kind} />;
   }

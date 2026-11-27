@@ -76,6 +76,8 @@ export interface Candidate {
    * Photo spots: minimum stay; the light window may make it longer.
    */
   durationHours: number;
+  /** Parking for navigation (optional). Without it, navigation goes to the start / photo position. */
+  parking?: { lat: number; lon: number };
   /** Photo spots: walking time from parking to the spot, one way, minutes. */
   approachMinutes?: number;
   /** Manual travel time per start point id, minutes (one way). */
@@ -283,6 +285,34 @@ export type ExclusionReason =
   | 'weather_knockout'
   | 'conditions_poor';
 
+export interface WeatherHourRow {
+  hour: number;
+  temperature: number;
+  windGusts: number;
+  cloudCover: number;
+  /** Minutes of sunshine in this hour, if the model provides it. */
+  sunshineMinutes?: number;
+  precipitation: number;
+}
+
+/** Weather at the summit/spot during the activity, for display. */
+export interface WeatherSummary {
+  /** Mean temperature in the window, °C. */
+  temperature: number;
+  maxGust: number;
+  /** Mean total cloud cover, %. */
+  cloudCover: number;
+  /** Sunshine in the window, hours (undefined without model data). */
+  sunshineHours?: number;
+  newSnowCm: number;
+  precipitationMm: number;
+  fogSeaLikely: boolean;
+  /** Moon illumination 0–1 for evening outings. */
+  moonIllumination?: number;
+  model: string;
+  hours: WeatherHourRow[];
+}
+
 export interface Suggestion {
   id: string;
   candidateId: string;
@@ -304,6 +334,8 @@ export interface Suggestion {
   photo?: PhotoAddOn;
   priceChf?: number;
   risk: RiskInfo;
+  /** Optional: plans stored before this field existed have none. */
+  weather?: WeatherSummary;
   isNew: boolean;
   /** Depends on the avalanche rating (tour or unsignposted trail). */
   avalancheDependent: boolean;

@@ -125,10 +125,23 @@ Die Uhrzeiten stehen in [`src/ui/smartStart.ts`](src/ui/smartStart.ts).
 
 ## Ablauf einer Woche
 
-1. **Donnerstag:** *Verwaltung → Risiko*: pro Tour die aktuelle Farbe von [Skitourenguru](https://www.skitourenguru.ch) antippen (grün / orange / rot, optional Gefahrenstufe). Dann *Wochenende*: Zeitbudget Sa/So, Anreise max., Tagesform, Startpunkt → **Vorschläge zeigen**. Einen Vorschlag öffnen → **Plan wählen**.
+1. **Donnerstag:** *Verwaltung → Risiko*: pro Tour die aktuelle Farbe von [Skitourenguru](https://www.skitourenguru.ch) antippen (grün / orange / rot, optional Gefahrenstufe). Dann *Wochenende* öffnen: Die App rechnet **sofort** mit deinen letzten Einstellungen und deinem Standort. Oben steht die Einstellungszeile (z. B. «Sa ganzer Tag · So frei · max. 2 h · Normal · ab Zuhause»); **Anpassen** öffnet Zeitbudget, Anreise max., Tagesform und Startpunkt → **Neu vorschlagen**. Einen Vorschlag öffnen → **Plan wählen** → mit dem **Kalender-Knopf** (Kalender mit Plus) in den Kalender eintragen.
+   - **Startpunkt «Standort»:** Liegt dein Standort weniger als 10 km von einem gespeicherten Startpunkt entfernt, gelten dessen Anreisezeiten; sonst schätzt die App ab dem Standort. Ohne Standortfreigabe rechnet sie ab dem zuletzt gespeicherten Startpunkt (mit Hinweis). Der Standort bleibt auf dem Gerät.
+   - Automatisch neu gerechnet wird nur, wenn es noch keine Vorschläge gibt oder sie von einem früheren Tag sind **und** noch kein Plan gewählt ist. Ein gewählter Plan wird nie stillschweigend ersetzt.
+   - Jede Karte zeigt das Wetter oben während der Aktivität, z. B. «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee», bei Bedarf «Nebelmeer wahrscheinlich». Der Detailplan hat dazu eine Stundentabelle.
 2. **Freitagabend** (bzw. Samstagabend für einen Sonntagsplan): Farben **von heute** nochmals eintragen → **Vorabend-Check**. Ergebnis: «Plan steht.» oder «Wechsel auf Plan B» mit Grund → ggf. **Plan B übernehmen**.
 3. **Unterwegs:** SLF-Bulletin vor dem Start prüfen.
 4. **Sonntagabend:** **Feedback** – umgesetzt? wie viele Vorschläge passten? wie streng war die Tour? Die Auswertung zeigt Umsetzungsrate und Ø passende Vorschläge über die 8 Testwochenenden.
+
+---
+
+### Kalender
+
+Der Kalender-Knopf im Detailplan erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Kalendererinnerungen sind auf dem iPhone zuverlässig – eine gute Alternative zu den Kurzbefehlen. Auf dem iPhone öffnet sich der Dialog «Zum Kalender hinzufügen» (bitte einmal testen); am Computer wird die Datei heruntergeladen.
+
+### Navigation und Parkplatz
+
+«Navigation (Google Maps)» im Detailplan führt zum **Parkplatz**, falls im Eintrag hinterlegt, sonst zum Startpunkt (Touren, Trails), zur Talstation (Skigebiete) bzw. zum Fotostandort.
 
 ---
 
@@ -203,12 +216,13 @@ Entweder ein Array `[ … ]` oder ein Objekt `{ "candidates": [ … ] }`:
 | `priceChf` | nein | Skigebiet: Tageskarte in CHF (wird nur angezeigt) |
 | `done` | nein | «schon gemacht» (bewährt), Standard `false` |
 | `active` | nein | Wird vorgeschlagen, Standard `true` |
+| `parking` | nein | `{ lat, lon }` – Parkplatz für die Navigation (Google Maps) |
 | `photoSpotIds` | nein | IDs zugeordneter Fotospots (sonst automatisch im Umkreis von 10 km) |
 | `link` | nein | Muss mit `http://` oder `https://` beginnen |
 | `note` | nein | Text |
 | `gpx` | nein | GPX-Track als Text (für den GPX-Export im Detailplan) |
 
-Koordinaten in WGS84 (Dezimalgrad), Höhen in Metern über Meer.
+Koordinaten in WGS84 (Dezimalgrad), Höhen in Metern über Meer. Im Editor der App kannst du statt Koordinaten auch einen **swisstopo-Link** (map.geo.admin.ch) einfügen – die App liest die Koordinaten daraus. Anreisezeiten aller Einträge trägst du am schnellsten unter *Verwaltung → Liste → Anreisezeiten* in einer Tabelle ein (leere Felder zeigen die Schätzung).
 
 ### 2. Vollständiges Backup
 
@@ -303,7 +317,8 @@ app/
 ## Bekannte Grenzen
 
 - **Startliste:** 18 Beispiele mit **ungefähren** Koordinaten, Höhen und Zeiten – vor dem Gebrauch prüfen («In swisstopo prüfen» im Editor), Signalisation der Trails vor Ort klären.
-- **Anreise:** ohne eingetragene Zeit nur eine Schätzung aus der Luftlinie. Für verlässliche Pläne die Minuten pro Startpunkt eintragen.
+- **Anreise:** ohne eingetragene Zeit nur eine Schätzung aus der Luftlinie – auch beim Startpunkt «Standort» weit weg von gespeicherten Startpunkten. Für verlässliche Pläne die Minuten pro Startpunkt eintragen (Tabelle *Anreisezeiten*).
+- **Kalender auf dem iPhone:** ob die installierte App den Dialog «Zum Kalender hinzufügen» direkt öffnet, hängt von der iOS-Version ab – bitte testen.
 - **Foto-Zusatz:** Die Fahrt zwischen Fotospot und Aktivität wird vorsichtig aus der Luftlinie geschätzt; Bergketten kennt die App nicht. Fotospots deshalb am besten selbst zuordnen.
 - **Pisten offen, Andrang, Schneehöhe:** nicht berücksichtigt (keine freie Datenquelle); inaktive Skigebiete in der Liste ausschalten.
 - **Kurzbefehle:** öffnen je nach iOS Safari statt der App (siehe oben).
