@@ -57,10 +57,14 @@ function withStartPoint(profile: Profile, sp: StartPoint | undefined): Profile {
   return { ...profile, startPoints: [...profile.startPoints, sp] };
 }
 
+/** Saturday of the current/upcoming weekend (on Sunday: the day before), the key of a weekend plan. */
 export function weekendKey(today: IsoDate): IsoDate {
   const w = upcomingWeekend(today);
-  return (w.sat ?? w.sun) as IsoDate;
+  return w.sat ?? addDays(w.sun as IsoDate, -1);
 }
+
+/** The weekend screen updates automatically once per day, from this hour on. */
+export const AUTO_UPDATE_FROM_HOUR = 5;
 
 /** Saturday of the weekend that feedback refers to (the current one on Sat/Sun, else the last one). */
 export function feedbackWeekend(today: IsoDate): IsoDate {
@@ -114,7 +118,8 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     suggestions: result.suggestions,
     ...(result.planB ? { planB: result.planB } : {}),
     // Recomputing drops a chosen plan only if it no longer exists.
-    ...(previous?.chosenId && [...result.suggestions, result.planB].some((s) => s?.id === previous.chosenId) ? { chosenId: previous.chosenId } : {}),
+    // A chosen plan always survives a recomputation (as snapshot); the evening check decides if it still holds.
+    ...(previous?.chosenId ? { chosenId: previous.chosenId, ...(previous.chosen ? { chosen: previous.chosen } : {}) } : {}),
     checks: previous?.checks ?? [],
     excludedSummary: summariseExclusions(result.excluded, validIds),
     weather: weatherMeta,
@@ -125,17 +130,17 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
 }
 
 /**
- * Opening the weekend screen computes automatically when there is no plan yet, or when the plan
- * is from an earlier day and nothing is chosen. A chosen plan is never replaced silently.
+ * Opening the weekend screen computes automatically only when there is no plan yet, or once a day
+ * (first opening from AUTO_UPDATE_FROM_HOUR on). Otherwise the stored suggestions stay; updating is manual.
  */
-export function needsAutoCompute(plan: WeekendPlan | undefined, today: IsoDate): boolean {
+export function needsAutoCompute(plan: WeekendPlan | undefined, today: IsoDate, hour: number): boolean {
   if (!plan) return true;
-  return !plan.chosenId && plan.computedOn !== today;
+  return plan.computedOn !== today && hour >= AUTO_UPDATE_FROM_HOUR;
 }
 
 export function chosenSuggestion(plan: WeekendPlan): Suggestion | undefined {
   if (!plan.chosenId) return undefined;
-  return [...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].find((s) => s.id === plan.chosenId);
+  return plan.chosen ?? [...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].find((s) => s.id === plan.chosenId);
 }
 
 /** The weekend plan relevant today: this weekend's (Mon–Sun). */
@@ -183,9 +188,9 @@ export async function adoptAlternative(db: PlannerDB, weekend: IsoDate, alternat
   if (!plan) return;
   const known = plan.suggestions.some((s) => s.id === alternative.id);
   const planB: PlanB = 'planBReason' in alternative ? alternative : { ...alternative, planBReason: PLAN_B_REASON.generic };
-  await saveWeekendPlan(db, { ...plan, ...(known ? {} : { planB }), chosenId: alternative.id });
+  await saveWeekendPlan(db, { ...plan, ...(known ? {} : { planB }), chosenId: alternative.id, chosen: known ? alternative : planB });
 }
 
 export function findSuggestion(plan: WeekendPlan, id: string): Suggestion | PlanB | undefined {
-  return [...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].find((s) => s.id === id);
+  return [...plan.suggestions, ...(plan.planB ? [plan.planB] : []), ...(plan.chosen ? [plan.chosen] : [])].find((s) => s.id === id);
 }

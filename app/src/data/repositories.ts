@@ -144,7 +144,10 @@ export async function latestWeekendPlan(db: PlannerDB): Promise<WeekendPlan | un
 }
 
 export async function choosePlan(db: PlannerDB, weekend: IsoDate, suggestionId: string): Promise<void> {
-  await db.weekendPlans.update(weekend, { chosenId: suggestionId });
+  const plan = await db.weekendPlans.get(weekend);
+  if (!plan) return;
+  const chosen = [...plan.suggestions, ...(plan.planB ? [plan.planB] : []), ...(plan.chosen ? [plan.chosen] : [])].find((s) => s.id === suggestionId);
+  await db.weekendPlans.put({ ...plan, chosenId: suggestionId, ...(chosen ? { chosen } : {}) });
 }
 
 export async function addEveningCheck(db: PlannerDB, weekend: IsoDate, check: EveningCheckRecord): Promise<void> {

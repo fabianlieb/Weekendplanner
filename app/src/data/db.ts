@@ -44,6 +44,8 @@ export interface WeekendPlan {
   suggestions: Suggestion[];
   planB?: PlanB;
   chosenId?: string;
+  /** Snapshot of the chosen suggestion: it stays even if a later recomputation no longer lists it. */
+  chosen?: Suggestion | PlanB;
   checks: EveningCheckRecord[];
   /** Number of candidates not suggested at all, per reason (a candidate may count for several). */
   excludedSummary?: Partial<Record<ExclusionReason, number>>;

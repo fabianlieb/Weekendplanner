@@ -233,18 +233,29 @@ describe('planner (storage + weather + engine)', () => {
     expect(check.status).toBe('checked');
   });
 
-  it('auto-compute only without plan, or for an unchosen plan from another day', async () => {
+  it('auto-update only without plan, or once a day from the morning on', async () => {
     await seed();
-    expect(needsAutoCompute(undefined, '2026-12-03')).toBe(true);
+    expect(needsAutoCompute(undefined, '2026-12-03', 2)).toBe(true);
     const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
-    expect(needsAutoCompute(plan, '2026-12-03')).toBe(false);
-    expect(needsAutoCompute(plan, '2026-12-04')).toBe(true);
-    expect(needsAutoCompute({ ...plan, chosenId: plan.suggestions[0]!.id }, '2026-12-04')).toBe(false);
+    expect(needsAutoCompute(plan, '2026-12-03', 18)).toBe(false); // same day: stays, manual only
+    expect(needsAutoCompute(plan, '2026-12-04', 3)).toBe(false); // night: not yet
+    expect(needsAutoCompute(plan, '2026-12-04', 7)).toBe(true); // next morning: once
+  });
+
+  it('a chosen plan survives recomputation even if it is no longer suggested', async () => {
+    await seed();
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const tour = plan.suggestions.find((s) => s.avalancheDependent)!;
+    await choosePlan(db, plan.weekend, tour.id);
+    await db.riskEntries.clear(); // Friday morning: Thursday colours no longer valid
+    const again = await computeSuggestions(db, input, { now: FRIDAY, fetchFn: weatherFetch() });
+    expect(again.plan.suggestions.some((s) => s.id === tour.id)).toBe(false);
+    expect(chosenSuggestion(again.plan)?.id).toBe(tour.id);
   });
 
   it('weekend key', () => {
     expect(weekendKey('2026-12-03')).toBe('2026-12-05');
-    expect(weekendKey('2026-12-06')).toBe('2026-12-06');
+    expect(weekendKey('2026-12-06')).toBe('2026-12-05'); // Sunday belongs to Saturday's plan
   });
 });
 

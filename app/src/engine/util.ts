@@ -112,6 +112,13 @@ export function zurichMinutes(instant: Date, d: IsoDate): Minutes {
   return Math.round((instant.getTime() - midnight) / 60000);
 }
 
+const ZURICH_HOUR = new Intl.DateTimeFormat('en-GB', { timeZone: TIME_ZONE, hour: '2-digit', hourCycle: 'h23' });
+
+/** Current hour 0–23 in Zurich. */
+export function zurichHour(now: Date = new Date()): number {
+  return Number(ZURICH_HOUR.format(now));
+}
+
 /** Today's date in Zurich. */
 export function zurichToday(now: Date = new Date()): IsoDate {
   return ZURICH_DATE.format(now);

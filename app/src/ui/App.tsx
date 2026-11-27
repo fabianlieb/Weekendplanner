@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getDb } from '../data/db';
 import { chosenSuggestion, currentWeekendPlan, feedbackWeekend } from '../data/planner';
 import { getWeekendPlan, hasProfile } from '../data/repositories';
-import { addDays, weekday, zurichToday } from '../engine/util';
+import { addDays, weekday, zurichHour, zurichToday } from '../engine/util';
 import { AdminView } from './admin/AdminView';
 import { Attribution, Notice, Toast } from './components';
 import { smartStartView } from './smartStart';
@@ -19,10 +19,6 @@ const TABS: { view: View; label: string; matches: View[] }[] = [
   { view: 'feedback', label: 'Feedback', matches: ['feedback', 'stats'] },
   { view: 'admin', label: 'Verwaltung', matches: ['admin'] },
 ];
-
-function zurichHour(now: Date): number {
-  return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Zurich', hour: '2-digit', hourCycle: 'h23' }).format(now));
-}
 
 /** Picks the start screen when the app is opened without `?view=`. */
 async function startView(now: Date = new Date()): Promise<{ view: View; params: Record<string, string> }> {

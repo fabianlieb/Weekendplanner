@@ -8,7 +8,7 @@ import { DEFAULT_INPUT, getLastInput, getProfile, listCandidates, riskEntriesOn,
 import { needsAvalancheRating } from '../../engine/risk';
 import { TRAINED_GROUP_QUESTION, shortDate } from '../../engine/texts';
 import type { Candidate, DayForm, MaxTravelHours, Profile, TimeBudget, WeekendInput } from '../../engine/types';
-import { upcomingWeekend, weekday, zurichToday } from '../../engine/util';
+import { upcomingWeekend, weekday, zurichHour, zurichToday } from '../../engine/util';
 import { Choice, Notice, PageHead, Section } from '../components';
 import { BUDGET_LABEL, DAY_FORM_LABEL } from '../labels';
 import { currentPosition } from '../location';
@@ -79,7 +79,7 @@ export function WeekendView() {
       const inp: WeekendInput = { ...DEFAULT_INPUT, ...(last ?? {}), startPointId: choice, trainedGroupConfirmed: false };
       setInput(inp);
       setPlan(existing);
-      if (candidates.length > 0 && needsAutoCompute(existing, today)) await compute(inp, profile);
+      if (candidates.length > 0 && needsAutoCompute(existing, today, zurichHour())) await compute(inp, profile);
     })();
     // runs once on open
   }, []);
@@ -220,9 +220,9 @@ export function WeekendView() {
         </div>
       )}
 
-      {busy && !panel && <span className="small muted">Vorschläge werden berechnet …</span>}
+      {busy && !panel && <span className="small muted">{plan ? 'Aktualisiere mit aktuellem Wetter …' : 'Vorschläge werden berechnet …'}</span>}
 
-      {plan && !busy && (
+      {plan && (
         <>
           {plan.chosenId && plan.computedOn !== today && (
             <div className="row small">
