@@ -10,7 +10,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "demo": "vitest run"
+    "demo": "vitest run --silent=false"
   },
   "dependencies": {
     "react": "19.3.1",
