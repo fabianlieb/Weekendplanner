@@ -2,7 +2,7 @@ import { getDb } from '../../data/db';
 import { listCandidates, setDone } from '../../data/repositories';
 import { SEED_CANDIDATES } from '../../data/seed';
 import type { Candidate } from '../../engine/types';
-import { Notice, Section, showToast, useAsync } from '../components';
+import { Notice, PageHead, Section, showToast, useAsync } from '../components';
 import { KIND_ORDER, KIND_PLURAL } from '../labels';
 import { navigate } from '../router';
 
@@ -24,7 +24,7 @@ function meta(c: Candidate): string {
   return parts.join(' · ');
 }
 
-export function CandidatesScreen() {
+export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
   const db = getDb();
   const { data: candidates, reload } = useAsync(() => listCandidates(db), []);
   if (!candidates) return null;
@@ -41,12 +41,18 @@ export function CandidatesScreen() {
   };
 
   return (
-    <div className="stack">
+    <>
+      <PageHead overline="Liste" title="Deine Orte" lead={`${candidates.length} Einträge · Touren, Trails, Skigebiete, Fotospots`} />
+      {welcome && candidates.length > 0 && (
+        <button type="button" className="btn btn-primary" onClick={() => navigate('thursday')}>
+          Fertig: Vorschläge zeigen
+        </button>
+      )}
       <div className="grid-2">
-        <button type="button" className="btn btn-dark" onClick={() => navigate('admin', { tab: 'list', edit: 'new' })}>
+        <button type="button" className="btn btn-dark" onClick={() => navigate('list', { edit: 'new' })}>
           Neuer Eintrag
         </button>
-        <button type="button" className="btn" disabled={candidates.length === 0} onClick={() => navigate('admin', { tab: 'list', travel: '1' })}>
+        <button type="button" className="btn" disabled={candidates.length === 0} onClick={() => navigate('list', { travel: '1' })}>
           Anreisezeiten
         </button>
       </div>
@@ -71,7 +77,7 @@ export function CandidatesScreen() {
             <div className="list">
               {items.map((c) => (
                 <div key={c.id} className="list-item">
-                  <button type="button" className="list-main" onClick={() => navigate('admin', { tab: 'list', edit: c.id })}>
+                  <button type="button" className="list-main" onClick={() => navigate('list', { edit: c.id })}>
                     <span className="name">{c.name}</span>
                     <span className="meta">{meta(c)}</span>
                   </button>
@@ -87,8 +93,8 @@ export function CandidatesScreen() {
       })}
 
       {candidates.length > 0 && (
-        <span className="tiny muted">«schon gemacht» = bewährt. Pro Wochenende kommen etwa 2 bewährte und 1 neue Option.</span>
+        <span className="tiny muted">«gemacht» = bewährt. Pro Wochenende kommen etwa 2 bewährte und 1 neue Option.</span>
       )}
-    </div>
+    </>
   );
 }

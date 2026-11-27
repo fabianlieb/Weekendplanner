@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { backupFileName, exportData, importJson, type ImportMode, type ValidationResult } from '../../data/backup';
 import { getDb } from '../../data/db';
-import { Choice, Notice, Section, showToast, useAsync } from '../components';
+import { Choice, Notice, PageHead, Section, showToast, useAsync } from '../components';
+import { navigate } from '../router';
 import { shareOrDownload } from '../files';
 import { SEED_CANDIDATES } from '../../data/seed';
 import { loadSeed } from './CandidatesScreen';
@@ -42,6 +43,10 @@ export function BackupScreen() {
 
   return (
     <div className="stack">
+      <button type="button" className="back-link" onClick={() => navigate('profile')}>
+        ‹ Profil
+      </button>
+      <PageHead overline="Profil" title="Backup & Import" />
       <Notice>Deine Daten liegen nur auf diesem Gerät. Mach regelmässig ein Backup, z. B. nach jedem Wochenende.</Notice>
 
       <Section title="Export" aside={counts ? `${counts.candidates} Einträge · ${counts.feedback} Feedbacks` : undefined}>

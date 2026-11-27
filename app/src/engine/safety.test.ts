@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SAT, TODAY, candidates, context, freshRisks, input, profile } from './__fixtures__/scenario';
+import { SAT, TODAY, candidates, context, freshRisks, input, profile, withLevel } from './__fixtures__/scenario';
 import { eveningCheck } from './eveningCheck';
 import { MANUAL_SOURCE, allowedColors, needsAvalancheRating, resolveRisk } from './risk';
 import { suggest } from './suggest';
@@ -22,7 +22,7 @@ function onlyTour(tourId: string, risks: RiskEntry[], level: RiskLevel = 3, conf
     context({
       candidates: [c],
       riskEntries: risks,
-      profile: { ...profile, riskLevel: level },
+      profile: withLevel(profile, level),
       input: { ...input, trainedGroupConfirmed: confirmed },
     }),
   );
@@ -164,7 +164,7 @@ describe('rule 3 – fail closed on missing or stale risk', () => {
         entries.push({ candidateId: t.id, color, date: addDays(TODAY, age), source: MANUAL_SOURCE });
       }
       const result = suggest(
-        context({ riskEntries: entries, profile: { ...profile, riskLevel: level }, input: { ...input, trainedGroupConfirmed: confirmed } }),
+        context({ riskEntries: entries, profile: withLevel(profile, level), input: { ...input, trainedGroupConfirmed: confirmed } }),
       );
       for (const s of allSuggested(result)) {
         if (!s.avalancheDependent) continue;
@@ -224,7 +224,7 @@ describe('rule 5 – red only with confirmation', () => {
 
 describe('rule 6 – risk info is always visible on tours and snowshoe trails', () => {
   it('every tour or trail suggestion carries colour, danger level and bulletin hint', () => {
-    const r = suggest(context({ profile: { ...profile, riskLevel: 3 }, input: { ...input, trainedGroupConfirmed: true } }));
+    const r = suggest(context({ profile: withLevel(profile, 3), input: { ...input, trainedGroupConfirmed: true } }));
     const sports = [...r.suggestions, ...(r.planB ? [r.planB] : [])].filter((s) => s.activity === 'ski_tour' || s.activity === 'snowshoe');
     for (const s of suggest(context({ candidates: candidates.filter((c) => c.kind === 'ski_tour' || c.kind === 'snowshoe_trail') })).suggestions) sports.push(s);
     expect(sports.length).toBeGreaterThan(0);
@@ -248,5 +248,26 @@ describe('rule 6 – risk info is always visible on tours and snowshoe trails', 
   it('the danger level is shown when entered', () => {
     const s = onlyTour('schwarzhorn', freshRisks()).suggestions[0];
     expect(s?.risk.dangerLabel).toBe('Gefahrenstufe 2 laut Bulletin');
+  });
+});
+
+describe('sports and levels per activity', () => {
+  it('a disabled sport is never suggested', () => {
+    const p = { ...profile, activities: { ...profile.activities, ski_tour: { enabled: false, level: 2 as const } } };
+    const r = suggest(context({ profile: p }));
+    expect([...r.suggestions, ...(r.planB ? [r.planB] : [])].some((s) => s.activity === 'ski_tour')).toBe(false);
+    expect(r.excluded.filter((e) => e.candidateId === 'schwarzhorn').every((e) => e.reasons.includes('activity_disabled'))).toBe(true);
+  });
+
+  it('the level of each activity limits its own colours', () => {
+    // Ski tours level 1 (green only), snowshoe level 2: orange snowshoe allowed, orange tour not.
+    const p = { ...profile, activities: { ...profile.activities, ski_tour: { enabled: true, level: 1 as const }, snowshoe: { enabled: true, level: 2 as const } } };
+    const risks = [
+      { candidateId: 'pizol', color: 'orange' as const, date: TODAY, source: MANUAL_SOURCE },
+      { candidateId: 'fronalpstock', color: 'orange' as const, date: TODAY, source: MANUAL_SOURCE },
+    ];
+    const ex = (id: string) => suggest(context({ profile: p, riskEntries: risks })).excluded.filter((e) => e.candidateId === id).flatMap((e) => e.reasons);
+    expect(ex('pizol')).toContain('risk_above_level');
+    expect(ex('fronalpstock')).not.toContain('risk_above_level');
   });
 });

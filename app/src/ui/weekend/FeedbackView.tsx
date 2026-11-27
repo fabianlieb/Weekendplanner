@@ -56,6 +56,9 @@ export function FeedbackView() {
 
   return (
     <>
+      <button type="button" className="back-link" onClick={() => navigate('thursday')}>
+        ‹ Wochenende
+      </button>
       <PageHead
         overline="Sonntagabend · Feedback"
         title="Wie war dein Wochenende?"

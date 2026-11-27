@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { getDb } from '../data/db';
-import { chosenSuggestion, currentWeekendPlan, feedbackWeekend } from '../data/planner';
-import { getWeekendPlan, hasProfile } from '../data/repositories';
-import { addDays, weekday, zurichHour, zurichToday } from '../engine/util';
-import { AdminView } from './admin/AdminView';
+import { hasProfile } from '../data/repositories';
+import { BackupScreen } from './admin/BackupScreen';
+import { CandidateEditor } from './admin/CandidateEditor';
+import { CandidatesScreen } from './admin/CandidatesScreen';
+import { ProfileScreen } from './admin/ProfileScreen';
+import { TravelTable } from './admin/TravelTable';
 import { Attribution, Notice, Toast } from './components';
-import { smartStartView } from './smartStart';
+import { ListIcon, ProfileIcon, WeekendIcon } from './icons';
 import { navigate, useRoute, type View } from './router';
 import { CheckView } from './weekend/CheckView';
 import { DetailView } from './weekend/DetailView';
@@ -13,32 +15,11 @@ import { FeedbackView } from './weekend/FeedbackView';
 import { StatsView } from './weekend/StatsView';
 import { WeekendView } from './weekend/WeekendView';
 
-const TABS: { view: View; label: string; matches: View[] }[] = [
-  { view: 'thursday', label: 'Wochenende', matches: ['thursday', 'suggestions', 'detail'] },
-  { view: 'check', label: 'Vorabend', matches: ['check'] },
-  { view: 'feedback', label: 'Feedback', matches: ['feedback', 'stats'] },
-  { view: 'admin', label: 'Verwaltung', matches: ['admin'] },
+const TABS: { view: View; label: string; icon: ReactNode; matches: View[] }[] = [
+  { view: 'thursday', label: 'Wochenende', icon: <WeekendIcon />, matches: ['thursday', 'suggestions', 'detail', 'check', 'feedback'] },
+  { view: 'list', label: 'Liste', icon: <ListIcon />, matches: ['list'] },
+  { view: 'profile', label: 'Profil', icon: <ProfileIcon />, matches: ['profile', 'backup', 'stats'] },
 ];
-
-/** Picks the start screen when the app is opened without `?view=`. */
-async function startView(now: Date = new Date()): Promise<{ view: View; params: Record<string, string> }> {
-  const db = getDb();
-  if (!(await hasProfile(db))) return { view: 'admin', params: { tab: 'profile', welcome: '1' } };
-  const today = zurichToday(now);
-  const plan = await currentWeekendPlan(db, now);
-  const chosen = plan ? chosenSuggestion(plan) : undefined;
-  const lastWeekend = feedbackWeekend(today);
-  const lastPlan = await getWeekendPlan(db, lastWeekend);
-  const feedbackMissing = !!lastPlan && lastPlan.weekend <= today && !(await db.feedback.get(lastWeekend));
-  const view = smartStartView({
-    weekday: weekday(today),
-    hour: zurichHour(now),
-    hasPlan: !!plan && plan.suggestions.length > 0,
-    chosenUpcoming: !!chosen && (chosen.date === today || chosen.date === addDays(today, 1)),
-    feedbackMissing,
-  });
-  return { view, params: {} };
-}
 
 function isIosSafariTab(): boolean {
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -48,31 +29,35 @@ function isIosSafariTab(): boolean {
 
 export function App() {
   const route = useRoute();
-  const [ready, setReady] = useState(() => new URLSearchParams(window.location.search).has('view'));
+  const [ready, setReady] = useState(false);
 
+  // First start (no profile yet) → profile. Otherwise the weekend screen is home: it shows the plan,
+  // the evening check and the feedback prompt at the right time.
   useEffect(() => {
-    if (ready) {
-      // Deep link: still send a first-time user to the profile.
-      void hasProfile(getDb()).then((has) => {
-        if (!has && route.view !== 'admin') navigate('admin', { tab: 'profile', welcome: '1' }, true);
-      });
-      return;
-    }
-    void startView()
-      .then((r) => navigate(r.view, r.params, true))
+    void hasProfile(getDb())
+      .then((has) => {
+        if (!has && route.view !== 'profile') navigate('profile', { welcome: '1' }, true);
+      })
       .finally(() => setReady(true));
     // only on first render
   }, []);
 
   if (!ready) return null;
 
-  let content;
+  const p = route.params;
+  let content: ReactNode;
   switch (route.view) {
-    case 'admin':
-      content = <AdminView params={route.params} />;
+    case 'list':
+      content = p.travel === '1' ? <TravelTable /> : p.edit !== undefined ? <CandidateEditor id={p.edit === 'new' ? undefined : p.edit} kind={p.kind} /> : <CandidatesScreen welcome={p.welcome === '1'} />;
+      break;
+    case 'profile':
+      content = <ProfileScreen welcome={p.welcome === '1'} />;
+      break;
+    case 'backup':
+      content = <BackupScreen />;
       break;
     case 'detail':
-      content = <DetailView key={route.params.id} id={route.params.id} />;
+      content = <DetailView key={p.id} id={p.id} />;
       break;
     case 'check':
       content = <CheckView />;
@@ -84,8 +69,8 @@ export function App() {
       content = <StatsView />;
       break;
     default:
-      // 'thursday' and 'suggestions': suggestions right away, settings via «Anpassen»
-      content = <WeekendView />;
+      // 'thursday' and 'suggestions' (deep links) → home
+      content = <WeekendView params={p} />;
   }
 
   return (
@@ -103,6 +88,7 @@ export function App() {
         <div className="tabbar-inner">
           {TABS.map((t) => (
             <button key={t.view} type="button" aria-current={t.matches.includes(route.view) ? 'page' : undefined} onClick={() => navigate(t.view)}>
+              {t.icon}
               {t.label}
             </button>
           ))}

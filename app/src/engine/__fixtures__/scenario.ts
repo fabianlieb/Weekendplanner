@@ -21,7 +21,12 @@ export const SUN: IsoDate = '2026-12-06';
 
 export const profile: Profile = {
   equipment: ['alpine_ski', 'touring_ski', 'skins', 'avalanche_kit', 'snowshoes', 'camera', 'tripod'],
-  riskLevel: 2,
+  activities: {
+    ski_tour: { enabled: true, level: 2 },
+    snowshoe: { enabled: true, level: 2 },
+    ski: { enabled: true, level: 2 },
+    photo: { enabled: true, level: 2 },
+  },
   fitness: { maxElevationGain: 1500, maxHours: 7 },
   earliestStart: 5 * 60,
   startPoints: [
@@ -29,6 +34,11 @@ export const profile: Profile = {
     { id: 'cabin', name: 'Ferienhaus', lat: 46.8, lon: 9.83 },
   ],
 };
+
+/** The same profile with one level for ski tours and snowshoe tours. */
+export function withLevel(p: Profile, level: 1 | 2 | 3): Profile {
+  return { ...p, activities: { ...p.activities, ski_tour: { enabled: true, level }, snowshoe: { enabled: true, level } } };
+}
 
 export const input: WeekendInput = {
   budget: { sat: 'full', sun: 'full' },

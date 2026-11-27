@@ -1,6 +1,6 @@
 import type { PlanB, RiskInfo, Suggestion } from '../../engine/types';
 import { formatTime } from '../../engine/util';
-import { DAY_SHORT, DAY_LABEL } from '../../engine/texts';
+import { DAY_LABEL, DAY_SHORT } from '../../engine/texts';
 import { RiskBadge } from '../components';
 import { formatDuration, weatherLine } from '../format';
 import { navigate } from '../router';
@@ -12,61 +12,57 @@ function riskShort(r: RiskInfo): string | undefined {
 }
 
 export function travelText(s: Suggestion): string {
-  return `Anreise ${formatDuration(s.travel.minutes)}${s.travel.estimated ? ' (geschätzt)' : ''}`;
+  return `${formatDuration(s.travel.minutes)}${s.travel.estimated ? ' (geschätzt)' : ''} ab ${s.travel.startPointName}`;
 }
 
+/** Compact suggestion card: name, day · activity, weather, reasoning, travel. The whole card opens the detail plan. */
 export function SuggestionCard({
   s,
-  index,
-  chosen,
+  planB = false,
   replaces,
   linked = true,
 }: {
   s: Suggestion | PlanB;
-  index?: number;
-  chosen?: boolean;
+  planB?: boolean;
   /** The suggestion Plan B replaces. */
   replaces?: Suggestion;
   /** false: not clickable (e.g. an alternative not yet stored). */
   linked?: boolean;
 }) {
-  const isPlanB = 'planBReason' in s && index === undefined;
   const meta = [travelText(s)];
-  if (s.photo) meta.push(`Fotospot ${s.photo.spotName}, ${s.photo.lightLabel} ${formatTime(s.photo.time)}`);
-  if (s.priceChf !== undefined) meta.push(`Tageskarte CHF ${s.priceChf}`);
+  if (s.photo) meta.push(`Foto ${s.photo.spotName} ${formatTime(s.photo.time)}`);
+  if (s.priceChf !== undefined) meta.push(`CHF ${s.priceChf}`);
   const badge = riskShort(s.risk);
+  const reason = planB && 'planBReason' in s ? s.planBReason : undefined;
+  const insteadOf = replaces && replaces.activity === s.activity ? replaces.candidateName : (replaces?.activityLabel ?? 'Vorschlag 1');
 
   const body = (
     <>
-      <span className="card-head">
-        <span className="overline-sm">
-          {isPlanB ? 'Plan B · automatisch' : `${index} · ${s.activityLabel} · ${DAY_LABEL[s.day]}`}
-          {!isPlanB && s.isNew ? ' · neu' : ''}
-        </span>
+      <span className="card-top">
+        <span className="card-title">{s.candidateName}</span>
         {badge && <RiskBadge {...(s.risk.color ? { color: s.risk.color } : {})} text={badge} />}
       </span>
-      <span className="card-title">
-        {isPlanB ? `${s.activityLabel} ${DAY_SHORT[s.day]} · ${s.candidateName}` : s.candidateName}
-        {chosen && <span className="tag chosen">gewählt</span>}
+      <span className="card-sub">
+        {planB && <span className="tag planb">Plan B</span>}
+        {planB ? DAY_SHORT[s.day] : DAY_LABEL[s.day]} · {s.activityLabel}
+        {!planB && s.isNew && <span className="accent"> · neu</span>}
       </span>
-      {isPlanB ? (
-        <span className="card-text">
-          {replaces && replaces.activity === s.activity ? `${s.candidateName} statt ${replaces.candidateName}` : `${s.activityLabel} statt ${replaces?.activityLabel ?? 'Vorschlag 1'}`} –{' '}
-          {(s as PlanB).planBReason}.
-        </span>
-      ) : (
-        <span className="card-text">{s.reasons.join(' ')}</span>
-      )}
       {s.weather && <span className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</span>}
+      <span className="card-text">{reason ? `Statt ${insteadOf}, ${reason}.` : s.reasons.join(' ')}</span>
       <span className="card-meta">
         {meta.join(' · ')}
-        {linked ? ' · Details ›' : ''}
+        {linked && <span aria-hidden="true"> ›</span>}
       </span>
     </>
   );
-  if (!linked) return <div className="card">{body}</div>;
+  if (!linked) return <div className="card suggestion">{body}</div>;
   return (
-    <button type="button" className="card suggestion" onClick={() => navigate('detail', { id: s.id })} aria-label={`${s.activityLabel} ${DAY_LABEL[s.day]}: ${s.candidateName}. Details`}>
+    <button
+      type="button"
+      className="card suggestion"
+      onClick={() => navigate('detail', { id: s.id })}
+      aria-label={`${s.candidateName}, ${DAY_LABEL[s.day]}, ${s.activityLabel}. Details öffnen`}
+    >
       {body}
     </button>
   );

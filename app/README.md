@@ -70,12 +70,13 @@ Neue Versionen lädt die installierte App beim nächsten Öffnen automatisch (Se
 
 1. In **Safari** https://fabianlieb.github.io/Weekendplanner/ öffnen.
 2. **Teilen** → **«Zum Home-Bildschirm»** → «Als Web-App öffnen» eingeschaltet lassen → **Hinzufügen**.
-3. Die App **über das neue Symbol** öffnen und dort einrichten: Profil (Material, Risikostufe, Kondition, früheste Abfahrt, Startpunkte), dann unter *Verwaltung → Liste* die Startliste laden oder eigene Einträge anlegen.
+3. Die App **über das neue Symbol** öffnen und dort einrichten: *Profil* (Sportarten und Niveau, Material, Kondition, früheste Abfahrt, Startpunkte), dann unter *Liste* die Startliste laden oder eigene Einträge anlegen. Die App ist danach in drei Tabs gegliedert: **Wochenende** (Startseite), **Liste**, **Profil** (mit Backup und Auswertung).
+
 
 **Wichtig:**
 
 - Die Home-Bildschirm-App hat **eigene Daten**, getrennt von Safari. Was du in einem Safari-Tab einträgst, sieht die App nicht. Läuft die Seite in Safari, zeigt sie einen Hinweis.
-- Home-Bildschirm-Apps sind von Safaris 7-Tage-Löschung ausgenommen. Trotzdem: **regelmässig ein Backup** machen (*Verwaltung → Backup → Backup als JSON speichern* → «In Dateien sichern»).
+- Home-Bildschirm-Apps sind von Safaris 7-Tage-Löschung ausgenommen. Trotzdem: **regelmässig ein Backup** machen (*Profil → Backup & Import → Backup als JSON speichern* → «In Dateien sichern»).
 - Startpunkte: Koordinaten als `47.3769, 8.5417` oder direkt aus swisstopo als LV95 (`2'683'000, 1'248'000`) einfügen, oder «Aktueller Standort».
 - Offline: Die App selbst, die zuletzt berechneten Vorschläge und das zuletzt geladene Wetter sind offline verfügbar. Neues Wetter braucht Netz.
 
@@ -110,34 +111,28 @@ Jeweils: **«Sofort ausführen»** wählen → **Weiter** → Aktion **«URL öf
 iOS öffnet «URL öffnen» je nach Version **in Safari statt in der installierten App** – und Safari hat nicht deine Daten (siehe oben). Der früher genannte Trick mit `webapp://` funktioniert laut Berichten seit April 2026 nicht mehr. **Teste einmal**, was bei dir passiert:
 
 - **Öffnet sich die App:** fertig, die Links führen direkt auf den richtigen Screen.
-- **Öffnet sich Safari:** nimm die Automation nur als Erinnerung (z. B. Aktion «Mitteilung anzeigen» statt «URL öffnen», oder eine wiederkehrende Erinnerung in der App *Erinnerungen*) und **tippe dann aufs App-Symbol**. Die App wählt den Screen selbst («intelligenter Start»):
-
-| Wann (ohne Deep Link geöffnet) | Screen |
-|---|---|
-| Do ab 12:00 und Fr, solange keine Vorschläge da sind | Donnerstag (4 Angaben) |
-| Fr und Sa ab 16:00, wenn ein Plan für morgen gewählt ist | Vorabend-Check |
-| So ab 17:00 bis Mi, wenn das Feedback fürs letzte Wochenende fehlt | Feedback |
-| sonst | Vorschläge (wenn vorhanden) bzw. Donnerstag |
-
-Die Uhrzeiten stehen in [`src/ui/smartStart.ts`](src/ui/smartStart.ts).
+- **Öffnet sich Safari:** nimm die Automation nur als Erinnerung (z. B. Aktion «Mitteilung anzeigen» statt «URL öffnen») und **tippe dann aufs App-Symbol**. Die Startseite *Wochenende* zeigt dann von selbst, was ansteht: am Vorabend den Knopf «Vorabend-Check machen» in der Karte «Dein Plan», von Sonntagabend bis Mittwoch die Frage nach dem Feedback.
+- **Noch einfacher:** den gewählten Plan mit dem Kalender-Knopf eintragen – der Kalender erinnert dich am Vorabend um 18:00 und 30 min vor der Abfahrt.
 
 ---
 
 ## Ablauf einer Woche
 
-1. **Donnerstag:** *Verwaltung → Risiko*: pro Tour die aktuelle Farbe von [Skitourenguru](https://www.skitourenguru.ch) antippen (grün / orange / rot, optional Gefahrenstufe). Dann *Wochenende* öffnen: Die App rechnet **sofort** mit deinen letzten Einstellungen und deinem Standort. Oben steht die Einstellungszeile (z. B. «Sa ganzer Tag · So frei · max. 2 h · Normal · ab Zuhause»); **Anpassen** öffnet Zeitbudget, Anreise max., Tagesform und Startpunkt → **Neu vorschlagen**. Einen Vorschlag öffnen → **Plan wählen** → mit dem **Kalender-Knopf** (Kalender mit Plus) in den Kalender eintragen.
-   - **Startpunkt «Standort»:** Liegt dein Standort weniger als 10 km von einem gespeicherten Startpunkt entfernt, gelten dessen Anreisezeiten; sonst schätzt die App ab dem Standort. Ohne Standortfreigabe rechnet sie ab dem zuletzt gespeicherten Startpunkt (mit Hinweis). Der Standort bleibt auf dem Gerät.
-   - Automatisch neu gerechnet wird nur, wenn es noch keine Vorschläge gibt oder sie von einem früheren Tag sind **und** noch kein Plan gewählt ist. Ein gewählter Plan wird nie stillschweigend ersetzt.
-   - Jede Karte zeigt das Wetter oben während der Aktivität, z. B. «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee», bei Bedarf «Nebelmeer wahrscheinlich». Der Detailplan hat dazu eine Stundentabelle.
-2. **Freitagabend** (bzw. Samstagabend für einen Sonntagsplan): Farben **von heute** nochmals eintragen → **Vorabend-Check**. Ergebnis: «Plan steht.» oder «Wechsel auf Plan B» mit Grund → ggf. **Plan B übernehmen**.
+1. **Donnerstag:** *Wochenende* öffnen. Die Startseite zeigt sofort Vorschläge mit deinen letzten Einstellungen und deinem Standort; sie aktualisiert sich **einmal pro Tag am Morgen** automatisch, sonst über «Aktualisieren».
+   - **Skitourenguru-Farben:** Der Block «… passende Touren warten auf die Skitourenguru-Farbe von heute» listet nur Touren, die sonst zu dir passen würden. Pro Tour die aktuelle Farbe von [Skitourenguru](https://www.skitourenguru.ch) antippen (optional die Gefahrenstufe laut Bulletin) → **Mit diesen Farben neu vorschlagen**.
+   - **Einstellungen:** eine Zeile wie «Sa ganz · So frei · 2 h · Normal · Zuhause» – antippen öffnet Zeitbudget, Anreise max., Tagesform und Startpunkt → **Neu vorschlagen**.
+   - **Startpunkt «Standort»:** Liegt dein Standort weniger als 10 km von einem gespeicherten Startpunkt entfernt, gelten dessen Anreisezeiten; sonst schätzt die App ab dem Standort. Ohne Standortfreigabe rechnet sie ab dem gespeicherten Startpunkt (mit Hinweis). Der Standort bleibt auf dem Gerät.
+   - Jede Karte zeigt das Wetter oben während der Aktivität, z. B. «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee», bei Bedarf «Nebelmeer wahrscheinlich».
+   - Einen Vorschlag öffnen → **Plan wählen** (Leiste unten) → **Kalender-Knopf** (Kalender mit Plus) und **Navigation**. Der Plan erscheint dann oben als **«Dein Plan»** und bleibt erhalten, auch wenn er nach einer Aktualisierung nicht mehr vorgeschlagen würde.
+2. **Freitagabend** (bzw. Samstagabend für einen Sonntagsplan): Farben **von heute** eintragen → in «Dein Plan» **Vorabend-Check machen**. Ergebnis: «Plan steht.» oder «Wechsel auf Plan B» mit Grund → ggf. **Plan B übernehmen**.
 3. **Unterwegs:** SLF-Bulletin vor dem Start prüfen.
-4. **Sonntagabend:** **Feedback** – umgesetzt? wie viele Vorschläge passten? wie streng war die Tour? Die Auswertung zeigt Umsetzungsrate und Ø passende Vorschläge über die 8 Testwochenenden.
+4. **Sonntagabend:** Die Startseite fragt nach dem **Feedback** – umgesetzt? wie viele Vorschläge passten? wie streng war die Tour? Die Auswertung zeigt Umsetzungsrate und Ø passende Vorschläge über die 8 Testwochenenden.
 
 ---
 
 ### Kalender
 
-Der Kalender-Knopf im Detailplan erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Kalendererinnerungen sind auf dem iPhone zuverlässig – eine gute Alternative zu den Kurzbefehlen. Auf dem iPhone öffnet sich der Dialog «Zum Kalender hinzufügen» (bitte einmal testen); am Computer wird die Datei heruntergeladen.
+Der Kalender-Knopf (im Detailplan und in «Dein Plan») erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Kalendererinnerungen sind auf dem iPhone zuverlässig – eine gute Alternative zu den Kurzbefehlen. Auf dem iPhone öffnet sich der Dialog «Zum Kalender hinzufügen» (bitte einmal testen); am Computer wird die Datei heruntergeladen.
 
 ### Navigation und Parkplatz
 
@@ -152,7 +147,7 @@ Umgesetzt in [`src/engine/risk.ts`](src/engine/risk.ts) und abgesichert in [`src
 1. Die App schreibt **nie** «sicher» – ein Test durchsucht allen App-Code und alle erzeugten Texte.
 2. Das Lawinenrisiko kommt **nur** aus den Skitourenguru-Farben, die du einträgst. Keine eigene Risikoberechnung, kein Scraping.
 3. **Fail closed:** Ein Eintrag gilt nur **am Tag, an dem er gemacht wurde**. Fehlt die Farbe von heute (Skitour oder nicht signalisierter Schneeschuh-Trail), gilt das Risiko als unbekannt – keine Vorschläge, kein Plan B, und der Vorabend-Check wechselt auf Plan B.
-4. Filter nach Risikostufe im Profil: 1 → nur grün · 2 → grün und orange · 3 → zusätzlich rot.
+4. Filter nach dem Niveau pro Sportart im Profil (Skitour und Schneeschuh je Stufe 1–3): 1 → nur grün · 2 → grün und orange · 3 → zusätzlich rot. Sportarten, die du im Profil ausschaltest, werden nie vorgeschlagen.
 5. Rot nur bei Stufe 3 **und** Bestätigung «Du bist in einer geschulten Gruppe?» (wird jedes Wochenende neu gefragt, nie gespeichert). Hinweis: «nur in Gruppen mit geschulten Leuten, nie allein».
 6. Jede Tour zeigt Risikofarbe (immer mit Text), Gefahrenstufe und den Hinweis aufs SLF-Bulletin.
 
@@ -162,7 +157,7 @@ Ein Fuzz-Test prüft 300 zufällige Kombinationen aus Farben, Daten und Stufen.
 
 ## JSON-Format der eigenen Liste
 
-Unter *Verwaltung → Backup → JSON-Datei wählen* lassen sich zwei Formate importieren. Ungültige Dateien werden mit Fehlerliste abgelehnt, es wird dann nichts geändert.
+Unter *Profil → Backup & Import → JSON-Datei wählen* lassen sich zwei Formate importieren. Ungültige Dateien werden mit Fehlerliste abgelehnt, es wird dann nichts geändert.
 
 ### 1. Kandidatenliste (eigene Liste, wird immer zusammengeführt)
 
@@ -222,7 +217,7 @@ Entweder ein Array `[ … ]` oder ein Objekt `{ "candidates": [ … ] }`:
 | `note` | nein | Text |
 | `gpx` | nein | GPX-Track als Text (für den GPX-Export im Detailplan) |
 
-Koordinaten in WGS84 (Dezimalgrad), Höhen in Metern über Meer. Im Editor der App kannst du statt Koordinaten auch einen **swisstopo-Link** (map.geo.admin.ch) einfügen – die App liest die Koordinaten daraus. Anreisezeiten aller Einträge trägst du am schnellsten unter *Verwaltung → Liste → Anreisezeiten* in einer Tabelle ein (leere Felder zeigen die Schätzung).
+Koordinaten in WGS84 (Dezimalgrad), Höhen in Metern über Meer. Im Editor der App kannst du statt Koordinaten auch einen **swisstopo-Link** (map.geo.admin.ch) einfügen – die App liest die Koordinaten daraus. Anreisezeiten aller Einträge trägst du am schnellsten unter *Liste → Anreisezeiten* in einer Tabelle ein (leere Felder zeigen die Schätzung).
 
 ### 2. Vollständiges Backup
 
@@ -235,7 +230,12 @@ Erzeugt von *Backup als JSON speichern*; Import wahlweise **zusammenführen** od
   "exportedAt": "2026-12-06T19:00:00.000Z",
   "profile": {
     "equipment": ["alpine_ski", "touring_ski", "skins", "avalanche_kit", "snowshoes", "camera", "tripod"],
-    "riskLevel": 2,
+    "activities": {
+      "ski_tour": { "enabled": true, "level": 2 },
+      "snowshoe": { "enabled": true, "level": 2 },
+      "ski": { "enabled": true, "level": 1 },
+      "photo": { "enabled": true, "level": 1 }
+    },
     "fitness": { "maxElevationGain": 1200, "maxHours": 6 },
     "earliestStart": 300,
     "startPoints": [{ "id": "home", "name": "Zuhause", "lat": 47.3769, "lon": 8.5417 }]
@@ -247,6 +247,7 @@ Erzeugt von *Backup als JSON speichern*; Import wahlweise **zusammenführen** od
 }
 ```
 
+- `activities`: pro Sportart (`ski_tour`, `snowshoe`, `ski`, `photo`) `enabled` und `level` 1–3 (begrenzt bei Skitour und Schneeschuh die Skitourenguru-Farben). Ältere Backups mit einem einzigen `riskLevel` werden weiterhin gelesen.
 - `equipment`: `alpine_ski`, `touring_ski`, `skins`, `avalanche_kit` (LVS, Sonde, Schaufel), `snowshoes`, `camera`, `tripod`
 - `earliestStart`: Minuten nach Mitternacht (300 = 05:00)
 - `riskEntries[].color`: nur `green`, `orange`, `red`; `dangerLevel` 1–5; `date` = Tag der Eingabe (gilt nur an diesem Tag)
@@ -297,7 +298,7 @@ app/
 │  │  ├─ texts.ts        alle Textbausteine (Deutsch)
 │  │  └─ *.test.ts       Tests, inkl. safety.test.ts
 │  ├─ data/          IndexedDB (Dexie), Open-Meteo, Backup, Startliste
-│  └─ ui/            React-Screens (Verwaltung, Wochenende), Routing, Stile
+│  └─ ui/            React-Screens (Wochenende, Liste, Profil), Routing, Stile
 ├─ public/           App-Symbole
 └─ scripts/          Symbol-Generator
 ```

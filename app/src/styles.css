@@ -483,7 +483,7 @@ textarea.input {
   max-width: 560px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .tabbar button {
@@ -498,15 +498,9 @@ textarea.input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 3px;
   position: relative;
-}
-
-.tabbar button::before {
-  content: '';
-  width: 18px;
-  height: 2px;
-  background: transparent;
+  border-top: 2px solid transparent;
 }
 
 .tabbar button[aria-current='page'] {
@@ -514,8 +508,8 @@ textarea.input {
   font-weight: 600;
 }
 
-.tabbar button[aria-current='page']::before {
-  background: var(--accent);
+.tabbar button[aria-current='page'] {
+  border-top-color: var(--accent);
 }
 
 /* --- Footer ----------------------------------------------------------------- */
@@ -716,12 +710,38 @@ table.hours td {
 }
 
 .settings-bar {
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+}
+
+.settings-text,
+.colour-head {
+  width: 100%;
+  min-height: var(--touch);
   display: flex;
   align-items: center;
   gap: 12px;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  padding: 8px 0;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-text .small {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-edit {
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  flex: none;
 }
 
 .panel {
@@ -791,4 +811,174 @@ table.travel td .input {
 
 table.travel td .input::placeholder {
   color: #a0a0a0;
+}
+
+.activity-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 10px;
+  border-bottom: 1px solid var(--hair);
+}
+
+/* --- Weekend home ----------------------------------------------------------- */
+
+.app > .page-head h1 {
+  font-size: 28px;
+}
+
+.plan-card {
+  border: 2px solid var(--ink);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-title {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.plan-card .card-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-sub {
+  font-size: 13px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag.planb {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.check-status {
+  border-left: 3px solid var(--risk-green);
+  background: var(--soft);
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.check-status.switch {
+  border-left-color: var(--accent);
+}
+
+.prompt-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 3px solid var(--accent);
+  background: var(--soft);
+  padding: 10px 12px;
+}
+
+.prompt-card .small {
+  flex: 1;
+}
+
+.colour-block {
+  border-bottom: 1px solid var(--hair);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+
+.colour-block.due .colour-head {
+  color: var(--accent);
+}
+
+.colour-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.list-head {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 4px 0 -12px;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ghost svg {
+  flex: none;
+}
+
+a.btn-icon {
+  color: var(--ink);
+}
+
+/* Detail plan: actions stay reachable above the tab bar */
+.action-bar {
+  position: sticky;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+  background: var(--bg);
+  padding: 8px 0;
+  border-top: 1px solid var(--ink);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+details.more {
+  border-top: 1px solid var(--ink);
+  padding-top: 4px;
+}
+
+details.more summary {
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+details.more summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+details.more[open] summary::after {
+  content: '–';
+}
+
+details.more summary::-webkit-details-marker {
+  display: none;
 }

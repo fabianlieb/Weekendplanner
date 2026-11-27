@@ -91,6 +91,12 @@ export function summariseExclusions(excluded: readonly Exclusion[], suggestedOrV
   return out;
 }
 
+/** Candidates that would have at least one valid option if only today's Skitourenguru colour were entered. */
+export function awaitingColour(excluded: readonly Exclusion[]): string[] {
+  const riskOnly = (r: ExclusionReason) => r === 'risk_unknown' || r === 'risk_stale';
+  return [...new Set(excluded.filter((e) => e.reasons.length > 0 && e.reasons.every(riskOnly)).map((e) => e.candidateId))];
+}
+
 export interface ComputeResult {
   plan: WeekendPlan;
   weather: Omit<WeatherLoadResult, 'weather'>;
@@ -122,6 +128,7 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     ...(previous?.chosenId ? { chosenId: previous.chosenId, ...(previous.chosen ? { chosen: previous.chosen } : {}) } : {}),
     checks: previous?.checks ?? [],
     excludedSummary: summariseExclusions(result.excluded, validIds),
+    awaitingColour: awaitingColour(result.excluded),
     weather: weatherMeta,
     ...(opts.extraStartPoint ? { startPoint: opts.extraStartPoint } : {}),
   };

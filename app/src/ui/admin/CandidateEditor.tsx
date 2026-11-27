@@ -126,7 +126,7 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
   const labels = POINT_LABELS[d.kind];
   const isTour = d.kind === 'ski_tour' || d.kind === 'snowshoe_trail';
   const photoSpots = all.filter((c) => c.kind === 'photo_spot' && c.id !== d.id);
-  const back = () => navigate('admin', { tab: 'list' });
+  const back = () => navigate('list');
 
   const save = async () => {
     const e = new Errors();

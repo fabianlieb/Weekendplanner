@@ -23,8 +23,8 @@ export function StatsView() {
 
   return (
     <>
-      <button type="button" className="back-link" onClick={() => navigate('feedback')}>
-        ‹ Feedback
+      <button type="button" className="back-link" onClick={() => navigate('profile')}>
+        ‹ Profil
       </button>
       <PageHead overline="Testphase" title="Auswertung" lead={`${s.weekends} von ${TEST_WEEKENDS} Testwochenenden erfasst`} />
 

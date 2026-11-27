@@ -46,9 +46,19 @@ export interface StartPoint {
   lon: number;
 }
 
+export interface ActivitySetting {
+  /** The person does this sport; disabled activities are never suggested. */
+  enabled: boolean;
+  /**
+   * Self-assessed level 1–3. For ski tours and snowshoe tours it is the upper limit of the
+   * Skitourenguru colours: 1 → green, 2 → + orange, 3 → + red (red only with trained-group confirmation).
+   */
+  level: RiskLevel;
+}
+
 export interface Profile {
   equipment: Equipment[];
-  riskLevel: RiskLevel;
+  activities: Record<Activity, ActivitySetting>;
   fitness: {
     /** Maximum elevation gain on a normal day, metres. */
     maxElevationGain: number;
@@ -269,6 +279,7 @@ export interface Option {
 
 export type ExclusionReason =
   | 'inactive'
+  | 'activity_disabled'
   | 'equipment_missing'
   | 'risk_unknown'
   | 'risk_stale'

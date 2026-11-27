@@ -2,10 +2,10 @@ import { getDb } from '../../data/db';
 import { currentWeekendPlan, findSuggestion } from '../../data/planner';
 import { choosePlan } from '../../data/repositories';
 import { formatTime } from '../../engine/util';
-import { Notice, PageHead, Section, showToast, useAsync } from '../components';
+import { PageHead, Section, showToast, useAsync } from '../components';
 import { openCalendarFile, shareOrDownload } from '../files';
 import { buildIcs } from '../ics';
-import { CalendarPlusIcon } from '../icons';
+import { CalendarPlusIcon, NavigateIcon } from '../icons';
 import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } from '../format';
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
 import { navigate } from '../router';
@@ -24,7 +24,7 @@ export function DetailView({ id }: { id: string | undefined }) {
 
   const back = (
     <button type="button" className="back-link" onClick={() => navigate('suggestions')}>
-      ‹ Vorschläge
+      ‹ Wochenende
     </button>
   );
   if (!plan || !s) {
@@ -68,13 +68,25 @@ export function DetailView({ id }: { id: string | undefined }) {
 
       <RiskBlock risk={s.risk} />
 
-      <p className="small" style={{ margin: 0 }}>
-        {s.reasons.join(' ')}
-      </p>
+      <div className="stack-sm">
+        {s.weather && <strong className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</strong>}
+        <span className="small">{s.reasons.join(' ')}</span>
+      </div>
+
+      <Section title="Zeitplan" aside={`${formatDuration(s.travel.minutes)}${s.travel.estimated ? ' (geschätzt)' : ''} ab ${s.travel.startPointName}`}>
+        <ol className="schedule">
+          {s.schedule.map((i) => (
+            <li key={`${i.time}-${i.label}`}>
+              <span className="time">{formatTime(i.time)}</span>
+              <span>{i.label}</span>
+            </li>
+          ))}
+        </ol>
+      </Section>
 
       {s.weather && (
-        <Section title="Wetter" aside={s.activity === 'photo' ? 'am Fotostandort' : 'oben, während der Aktivität'}>
-          <strong className="small">{weatherLine(s.weather, s.activity, s.slot)}</strong>
+        <details className="more">
+          <summary>Wetter Stunde für Stunde</summary>
           <table className="hours">
             <thead>
               <tr>
@@ -98,87 +110,58 @@ export function DetailView({ id }: { id: string | undefined }) {
             </tbody>
           </table>
           <span className="tiny muted">
-            Böen in km/h, Sonne in Minuten pro Stunde. Modell: {s.weather.model}
+            {s.activity === 'photo' ? 'Am Fotostandort' : 'Oben, während der Aktivität'}. Böen in km/h, Sonne in Minuten pro Stunde. {s.weather.model}
             {plan.weather?.fetchedAt ? `, Stand ${formatClock(plan.weather.fetchedAt)}` : ''}. Weather data by Open-Meteo.com.
           </span>
-        </Section>
+        </details>
       )}
 
-      <Section title="Zeitplan">
-        <ol className="schedule">
-          {s.schedule.map((i) => (
-            <li key={`${i.time}-${i.label}`}>
-              <span className="time">{formatTime(i.time)}</span>
-              <span>{i.label}</span>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      {s.photo && (
-        <Section title="Fotospot">
+      <Section title="Unterwegs">
+        {s.photo && (
           <span className="small">
-            {s.photo.spotName} · {s.photo.lightLabel} um {formatTime(s.photo.time)}
+            Fotospot {s.photo.spotName} · {s.photo.lightLabel} um {formatTime(s.photo.time)}
           </span>
-        </Section>
-      )}
-
-      <Section title="Route & Anreise">
-        {candidate && (
-          <div className="grid-2">
+        )}
+        {nav && <span className="small">Ziel fürs Auto: {nav.label}</span>}
+        {s.priceChf !== undefined && <span className="small">Tageskarte CHF {s.priceChf}</span>}
+        <div className="row-wrap">
+          {candidate && (
             <a className="btn" href={swisstopoUrl(candidate.summit)} target="_blank" rel="noreferrer">
-              In swisstopo öffnen
+              Karte (swisstopo)
             </a>
-            <button type="button" className="btn" disabled={!candidate.gpx} onClick={() => void exportGpx()}>
+          )}
+          {candidate?.gpx && (
+            <button type="button" className="btn" onClick={() => void exportGpx()}>
               GPX exportieren
             </button>
-          </div>
-        )}
-        {candidate && !candidate.gpx && <span className="tiny muted">Kein GPX-Track hinterlegt (in der Liste ergänzen).</span>}
-        {nav && navUrl && (
-          <a className="btn btn-dark" href={navUrl} target="_blank" rel="noreferrer">
-            Navigation (Google Maps): {nav.label}
-          </a>
-        )}
-        <span className="small">
-          Start: {s.travel.startPointName} · Auto, ca. {formatDuration(s.travel.minutes)}
-          {s.travel.estimated ? ' (geschätzt)' : ''}
-        </span>
-        {candidate && (
-          <a className="small" href={swisstopoUrl(candidate.valley, 8)} target="_blank" rel="noreferrer">
-            Ausgangspunkt in swisstopo
-          </a>
-        )}
-        {s.priceChf !== undefined && <span className="small">Tageskarte CHF {s.priceChf}</span>}
-        {candidate?.link && (
-          <a className="small" href={candidate.link} target="_blank" rel="noreferrer">
-            Link: {candidate.link.replace(/^https?:\/\//, '').slice(0, 40)}
-          </a>
-        )}
+          )}
+          {candidate?.link && (
+            <a className="btn" href={candidate.link} target="_blank" rel="noreferrer">
+              Link
+            </a>
+          )}
+        </div>
         {candidate?.note && <span className="tiny muted">{candidate.note}</span>}
       </Section>
 
-      {chosen && <Notice>Das ist dein Plan für dieses Wochenende. Am Vorabend prüft die App ihn mit aktuellen Daten.</Notice>}
-      <div className="row">
+      <div className="action-bar">
         {chosen ? (
           <button type="button" className="btn btn-dark grow" onClick={() => navigate('check')}>
-            Zum Vorabend-Check
+            Dein Plan · Vorabend-Check
           </button>
         ) : (
           <button type="button" className="btn btn-primary grow" onClick={() => void choose()}>
             Plan wählen
           </button>
         )}
-        <button
-          type="button"
-          className={`btn btn-icon${chosen ? '' : ' tall'}`}
-          aria-label="In Kalender eintragen"
-          title="In Kalender eintragen"
-          disabled={!nav}
-          onClick={addToCalendar}
-        >
+        <button type="button" className="btn btn-icon tall" aria-label="In Kalender eintragen" title="In Kalender eintragen" disabled={!nav} onClick={addToCalendar}>
           <CalendarPlusIcon />
         </button>
+        {navUrl && (
+          <a className="btn btn-icon tall" href={navUrl} target="_blank" rel="noreferrer" aria-label={`Navigation mit Google Maps: ${nav?.label ?? 'Ziel'}`} title="Navigation (Google Maps)">
+            <NavigateIcon />
+          </a>
+        )}
       </div>
     </>
   );

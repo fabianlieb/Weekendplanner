@@ -50,6 +50,8 @@ export interface WeekendPlan {
   /** Number of candidates not suggested at all, per reason (a candidate may count for several). */
   excludedSummary?: Partial<Record<ExclusionReason, number>>;
   weather?: { fetchedAt?: string; fromStaleCache: boolean; error?: string };
+  /** Tours that only lack today's Skitourenguru colour (would fit otherwise). */
+  awaitingColour?: string[];
   /** Ad-hoc start point (current location) the plan was computed from. */
   startPoint?: StartPoint;
 }

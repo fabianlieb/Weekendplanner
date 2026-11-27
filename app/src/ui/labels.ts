@@ -1,4 +1,4 @@
-import type { CandidateKind, DayForm, Equipment, RiskColor, RiskLevel, TimeBudget } from '../engine/types';
+import type { Activity, CandidateKind, DayForm, Equipment, RiskColor, RiskLevel, TimeBudget } from '../engine/types';
 
 export const EQUIPMENT_LABEL: Record<Equipment, string> = {
   alpine_ski: 'Ski (Piste)',
@@ -34,6 +34,19 @@ export const RISK_LEVEL_LABEL: Record<RiskLevel, { title: string; text: string }
   1: { title: 'Stufe 1', text: 'Nur grün – geringes Risiko laut Skitourenguru' },
   2: { title: 'Stufe 2', text: 'Grün und orange – Vorsicht, nur mit guter Ausrüstung' },
   3: { title: 'Stufe 3', text: 'Zusätzlich rot – nur in Gruppen mit geschulten Leuten, nie allein, immer mit Bestätigung' },
+};
+
+export const ACTIVITY_NAME: Record<Activity, string> = {
+  ski_tour: 'Skitour',
+  snowshoe: 'Schneeschuh',
+  ski: 'Ski (Piste)',
+  photo: 'Fotografie',
+};
+
+export const LEVEL_TEXT: Record<RiskLevel, string> = {
+  1: 'Einsteiger: nur grün – geringes Risiko laut Skitourenguru',
+  2: 'Fortgeschritten: grün und orange – Vorsicht, nur mit guter Ausrüstung',
+  3: 'Erfahren: auch rot – nur in Gruppen mit geschulten Leuten, nie allein, immer mit Bestätigung',
 };
 
 export const RISK_COLOR_SHORT: Record<RiskColor, string> = {

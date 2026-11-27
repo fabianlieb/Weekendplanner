@@ -9,6 +9,7 @@ import { buildRiskInfo, needsAvalancheRating, resolveRisk, riskDecision } from '
 import { buildSchedule } from './schedule';
 import { PLAN_B_REASON, activityLabel } from './texts';
 import { THRESHOLDS } from './thresholds';
+import { levelFor } from './profile';
 import { computeTiming } from './timing';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
@@ -114,10 +115,11 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
     // Reasons independent of day and slot
     const base: ExclusionReason[] = [];
     if (!c.active) base.push('inactive');
+    if (!profile.activities[activity].enabled) base.push('activity_disabled');
     if (!requiredEquipment(c).every((e) => profile.equipment.includes(e))) base.push('equipment_missing');
 
     const riskStatus = resolveRisk(c, ctx.riskEntries, ctx.today);
-    const decision = riskDecision(riskStatus, profile.riskLevel, input.trainedGroupConfirmed);
+    const decision = riskDecision(riskStatus, levelFor(profile, activity), input.trainedGroupConfirmed);
     if (decision === 'unknown') base.push(riskStatus.kind === 'unknown' && riskStatus.reason === 'stale' ? 'risk_stale' : 'risk_unknown');
     if (decision === 'above_level') base.push('risk_above_level');
     if (decision === 'red_unconfirmed') base.push('risk_red_unconfirmed');

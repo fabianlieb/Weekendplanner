@@ -1,13 +1,19 @@
 // Read/write helpers on top of the Dexie tables.
 
 import type { Candidate, Feedback, IsoDate, Profile, RiskColor, DangerLevel, WeekendInput } from '../engine/types';
+import { normalizeProfile } from '../engine/profile';
 import { MANUAL_SOURCE } from '../engine/risk';
 import type { EveningCheckRecord, PlannerDB, StoredRiskEntry, WeekendPlan } from './db';
 
 export const DEFAULT_PROFILE: Profile = {
   equipment: [],
-  // Most conservative level until the user sets it.
-  riskLevel: 1,
+  // All sports on, most conservative level until the user sets it.
+  activities: {
+    ski_tour: { enabled: true, level: 1 },
+    snowshoe: { enabled: true, level: 1 },
+    ski: { enabled: true, level: 1 },
+    photo: { enabled: true, level: 1 },
+  },
   fitness: { maxElevationGain: 1200, maxHours: 6 },
   earliestStart: 5 * 60,
   startPoints: [],
@@ -28,7 +34,8 @@ const LAST_INPUT_KEY = 'lastInput';
 
 export async function getProfile(db: PlannerDB): Promise<Profile> {
   const row = await db.settings.get(PROFILE_KEY);
-  return (row?.value as Profile | undefined) ?? DEFAULT_PROFILE;
+  // Older stored profiles (one global risk level) are migrated on read.
+  return row ? normalizeProfile(row.value as Profile) : DEFAULT_PROFILE;
 }
 
 export async function hasProfile(db: PlannerDB): Promise<boolean> {

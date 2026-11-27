@@ -1,8 +1,8 @@
 // Minimal URL-based routing via `?view=` (also the deep links for the Shortcuts automation).
 import { useEffect, useState } from 'react';
 
-export type View = 'thursday' | 'suggestions' | 'detail' | 'check' | 'feedback' | 'stats' | 'admin';
-const VIEWS: View[] = ['thursday', 'suggestions', 'detail', 'check', 'feedback', 'stats', 'admin'];
+export type View = 'thursday' | 'suggestions' | 'detail' | 'check' | 'feedback' | 'stats' | 'list' | 'profile' | 'backup' | 'admin';
+const VIEWS: View[] = ['thursday', 'suggestions', 'detail', 'check', 'feedback', 'stats', 'list', 'profile', 'backup', 'admin'];
 
 export interface Route {
   view: View;
@@ -16,7 +16,14 @@ export function parseRoute(search: string): Route {
   q.forEach((value, key) => {
     if (key !== 'view') params[key] = value;
   });
-  return { view: v && VIEWS.includes(v) ? v : 'thursday', params };
+  const view: View = v && VIEWS.includes(v) ? v : 'thursday';
+  // Old links ?view=admin&tab=… (the separate risk page is gone: colours are entered on the weekend screen).
+  if (view === 'admin') {
+    const { tab, ...rest } = params;
+    const target: View = tab === 'list' ? 'list' : tab === 'backup' ? 'backup' : tab === 'risk' ? 'thursday' : 'profile';
+    return { view: target, params: tab === 'risk' ? { colours: '1' } : rest };
+  }
+  return { view, params };
 }
 
 export function routeToSearch(r: Route): string {

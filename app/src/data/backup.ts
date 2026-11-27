@@ -4,8 +4,10 @@
 //  2. a candidate list: `[ {candidate}, ... ]` or `{ candidates: [ ... ] }`
 // Messages are in German because they are shown in the app.
 
+import { ACTIVITIES, normalizeProfile } from '../engine/profile';
 import { MANUAL_SOURCE } from '../engine/risk';
 import type {
+  Activity,
   Candidate,
   CandidateKind,
   DangerLevel,
@@ -14,7 +16,6 @@ import type {
   GeoPoint,
   Profile,
   RiskColor,
-  RiskLevel,
   StartPoint,
   Strictness,
 } from '../engine/types';
@@ -167,7 +168,14 @@ function validateProfile(v: unknown, e: Errors): Profile | undefined {
   if (!isObj(v)) return void e.add('profile', 'kein Objekt');
   const equipment = Array.isArray(v.equipment) ? v.equipment.filter((x): x is Equipment => EQUIPMENT.includes(x as Equipment)) : [];
   if (Array.isArray(v.equipment) && equipment.length !== v.equipment.length) e.add('profile.equipment', `unbekanntes Material (erlaubt: ${EQUIPMENT.join(', ')})`);
-  if (![1, 2, 3].includes(v.riskLevel as number)) e.add('profile.riskLevel', 'Risikostufe muss 1, 2 oder 3 sein');
+  if (v.activities !== undefined) {
+    if (!isObj(v.activities)) e.add('profile.activities', 'muss ein Objekt pro Sportart sein');
+    else
+      for (const [a, s] of Object.entries(v.activities)) {
+        if (!ACTIVITIES.includes(a as Activity)) e.add(`profile.activities.${a}`, `unbekannte Sportart (erlaubt: ${ACTIVITIES.join(', ')})`);
+        else if (!isObj(s) || !isBool(s.enabled) || ![1, 2, 3].includes(s.level as number)) e.add(`profile.activities.${a}`, 'braucht enabled (true/false) und level (1–3)');
+      }
+  } else if (![1, 2, 3].includes(v.riskLevel as number)) e.add('profile.riskLevel', 'Risikostufe muss 1, 2 oder 3 sein');
   const f = isObj(v.fitness) ? v.fitness : {};
   if (!isNum(f.maxElevationGain, 0, 5000)) e.add('profile.fitness.maxElevationGain', 'Höhenmeter ungültig');
   if (!isNum(f.maxHours, 0.5, 24)) e.add('profile.fitness.maxHours', 'Stunden ungültig');
@@ -180,13 +188,13 @@ function validateProfile(v: unknown, e: Errors): Profile | undefined {
       else e.add(`profile.startPoints[${i}]`, 'braucht id, name, lat, lon');
     });
   if (e.list.length > before) return undefined;
-  return {
+  return normalizeProfile({
     equipment,
-    riskLevel: v.riskLevel as RiskLevel,
+    ...(isObj(v.activities) ? { activities: v.activities as unknown as Profile['activities'] } : { riskLevel: v.riskLevel }),
     fitness: { maxElevationGain: f.maxElevationGain as number, maxHours: f.maxHours as number },
     earliestStart: v.earliestStart as number,
     startPoints,
-  };
+  });
 }
 
 function validateRisk(v: unknown, path: string, e: Errors): StoredRiskEntry | undefined {

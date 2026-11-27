@@ -16,7 +16,14 @@ export function CheckView() {
   const today = zurichToday();
   const { data: outcome, loading, reload } = useAsync(() => runEveningCheck(db), []);
 
-  const head = <PageHead overline={`${shortDate(today)} · Vorabend-Check`} title="Hält der Plan?" />;
+  const head = (
+    <>
+      <button type="button" className="back-link" onClick={() => navigate('thursday')}>
+        ‹ Wochenende
+      </button>
+      <PageHead overline={`${shortDate(today)} · Vorabend-Check`} title="Hält der Plan?" />
+    </>
+  );
   if (loading || !outcome) {
     return (
       <>
@@ -43,7 +50,7 @@ export function CheckView() {
       <>
         {head}
         <Notice>Du hast noch keinen Plan gewählt. Öffne einen Vorschlag und tippe auf «Plan wählen».</Notice>
-        <button type="button" className="btn btn-dark" onClick={() => navigate('suggestions')}>
+        <button type="button" className="btn btn-dark" onClick={() => navigate('thursday')}>
           Zu den Vorschlägen
         </button>
       </>
@@ -117,7 +124,7 @@ export function CheckView() {
         <Notice tone="warn">
           Trage die Skitourenguru-Farben von heute ein, dann prüfe neu. Ohne aktuelle Farbe bleibt die Tour gesperrt.
           <div className="row" style={{ marginTop: 10 }}>
-            <button type="button" className="btn" onClick={() => navigate('admin', { tab: 'risk' })}>
+            <button type="button" className="btn" onClick={() => navigate('thursday', { colours: '1' })}>
               Farben eintragen
             </button>
             <button type="button" className="btn" onClick={reload}>

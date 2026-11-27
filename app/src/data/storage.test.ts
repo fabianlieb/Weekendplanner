@@ -48,9 +48,18 @@ async function seed() {
 describe('repositories', () => {
   it('returns the conservative default profile until one is saved', async () => {
     expect(await getProfile(db)).toEqual(DEFAULT_PROFILE);
-    expect(DEFAULT_PROFILE.riskLevel).toBe(1);
+    expect(Object.values(DEFAULT_PROFILE.activities).every((a) => a.level === 1)).toBe(true);
     await saveProfile(db, profile);
     expect(await getProfile(db)).toEqual(profile);
+  });
+
+  it('migrates an older profile with one risk level', async () => {
+    const { activities: _a, ...old } = profile;
+    await db.settings.put({ key: 'profile', value: { ...old, riskLevel: 3 } });
+    const p = await getProfile(db);
+    expect(p.activities.ski_tour).toEqual({ enabled: true, level: 3 });
+    expect(p.activities.snowshoe).toEqual({ enabled: true, level: 3 });
+    expect(p.activities.ski.enabled).toBe(true);
   });
 
   it('never stores the trained-group confirmation', async () => {
@@ -180,6 +189,8 @@ describe('planner (storage + weather + engine)', () => {
     await db.riskEntries.clear();
     const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
     expect(plan.excludedSummary?.risk_unknown).toBe(4); // 3 tours + 1 unsignposted trail without colour
+    // Languard is also too far away → not «awaiting colour»; the other three would fit.
+    expect([...(plan.awaitingColour ?? [])].sort()).toEqual(['fronalpstock', 'pizol', 'schwarzhorn']);
     expect(plan.suggestions.every((s) => !s.avalancheDependent)).toBe(true);
   });
 

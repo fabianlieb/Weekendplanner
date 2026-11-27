@@ -25,7 +25,7 @@ export function TravelTable() {
 
   if (!data) return null;
   const { profile, candidates } = data as { profile: Profile; candidates: Candidate[] };
-  const back = () => navigate('admin', { tab: 'list' });
+  const back = () => navigate('list');
   const sorted = [...candidates].sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.name.localeCompare(b.name, 'de-CH'));
 
   const setCell = (cid: string, sp: string, v: string) => {
@@ -56,7 +56,7 @@ export function TravelTable() {
       <button type="button" className="back-link" onClick={back}>
         ‹ Eigene Liste
       </button>
-      <PageHead overline="Verwaltung" title="Anreisezeiten" lead="Minuten, einfache Fahrt mit dem Auto. Leer = Schätzung aus der Luftlinie (grau)." />
+      <PageHead overline="Liste" title="Anreisezeiten" lead="Minuten, einfache Fahrt mit dem Auto. Leer = Schätzung aus der Luftlinie (grau)." />
 
       {profile.startPoints.length === 0 ? (
         <Notice>Lege im Profil zuerst einen Startpunkt an.</Notice>

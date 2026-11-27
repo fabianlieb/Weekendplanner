@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+// Everything about the person on one page: sports and level, equipment, fitness, start points.
+// Changes are saved automatically.
+import { useEffect, useRef, useState } from 'react';
 import { getDb } from '../../data/db';
-import { getProfile, newId, saveProfile } from '../../data/repositories';
-import type { Equipment, Profile, RiskLevel, StartPoint } from '../../engine/types';
+import { getProfile, hasProfile, newId, saveProfile } from '../../data/repositories';
+import { ACTIVITIES, AVALANCHE_ACTIVITIES, missingEquipment } from '../../engine/profile';
+import type { Activity, Equipment, Profile, RiskLevel, StartPoint } from '../../engine/types';
 import { formatTime, parseTime } from '../../engine/util';
-import { Choice, Field, Notice, Section, showToast, useAsync } from '../components';
+import { Choice, Field, Notice, PageHead, Section, showToast, useAsync } from '../components';
 import { formatCoordinates, parseCoordinatesOrLink as parseCoordinates } from '../geo';
-import { EQUIPMENT_HINT, EQUIPMENT_LABEL, RISK_LEVEL_LABEL } from '../labels';
+import { ACTIVITY_NAME, EQUIPMENT_LABEL, LEVEL_TEXT } from '../labels';
 import { navigate } from '../router';
 
 const EQUIPMENT_ORDER: Equipment[] = ['alpine_ski', 'touring_ski', 'skins', 'avalanche_kit', 'snowshoes', 'camera', 'tripod'];
@@ -16,33 +19,76 @@ interface StartPointDraft {
   coords: string;
 }
 
+interface Draft {
+  profile: Profile;
+  gain: string;
+  hours: string;
+  points: StartPointDraft[];
+}
+
+function build(d: Draft): { profile?: Profile; errors: string[] } {
+  const errors: string[] = [];
+  const g = Number(d.gain);
+  const h = Number(d.hours.replace(',', '.'));
+  if (!Number.isFinite(g) || g < 100 || g > 4000) errors.push('Max. Höhenmeter: Zahl zwischen 100 und 4000.');
+  if (!Number.isFinite(h) || h < 1 || h > 16) errors.push('Max. Stunden: Zahl zwischen 1 und 16.');
+  const startPoints: StartPoint[] = [];
+  d.points.forEach((s, i) => {
+    if (!s.name.trim() && !s.coords.trim()) return; // an empty row is ignored
+    const c = parseCoordinates(s.coords);
+    if (!s.name.trim()) errors.push(`Startpunkt ${i + 1}: Name fehlt.`);
+    if (!c) errors.push(`Startpunkt ${i + 1}: Koordinaten nicht lesbar.`);
+    if (c && s.name.trim()) startPoints.push({ id: s.id, name: s.name.trim(), lat: c.lat, lon: c.lon });
+  });
+  if (errors.length) return { errors };
+  return { profile: { ...d.profile, fitness: { maxElevationGain: g, maxHours: h }, startPoints }, errors };
+}
+
 export function ProfileScreen({ welcome }: { welcome: boolean }) {
   const db = getDb();
-  const { data } = useAsync(() => getProfile(db), []);
-  const [p, setP] = useState<Profile>();
-  const [points, setPoints] = useState<StartPointDraft[]>([]);
-  const [gain, setGain] = useState('');
-  const [hours, setHours] = useState('');
+  const { data } = useAsync(async () => ({ profile: await getProfile(db), exists: await hasProfile(db) }), []);
+  const [d, setD] = useState<Draft>();
   const [errors, setErrors] = useState<string[]>([]);
+  const [saved, setSaved] = useState(false);
+  const loaded = useRef(false);
 
   useEffect(() => {
     if (!data) return;
-    setP(data);
-    setGain(String(data.fitness.maxElevationGain));
-    setHours(String(data.fitness.maxHours));
-    setPoints(
-      data.startPoints.length
-        ? data.startPoints.map((s) => ({ id: s.id, name: s.name, coords: formatCoordinates(s) }))
+    const p = data.profile;
+    setD({
+      profile: p,
+      gain: String(p.fitness.maxElevationGain),
+      hours: String(p.fitness.maxHours),
+      points: p.startPoints.length
+        ? p.startPoints.map((s) => ({ id: s.id, name: s.name, coords: formatCoordinates(s) }))
         : [{ id: 'home', name: 'Zuhause', coords: '' }],
-    );
+    });
   }, [data]);
 
-  if (!p) return null;
+  // Auto-save (debounced) whenever the draft is valid. The first draft is the loaded profile.
+  useEffect(() => {
+    if (!d) return;
+    if (!loaded.current) {
+      loaded.current = true;
+      return;
+    }
+    setSaved(false);
+    const t = setTimeout(() => {
+      const r = build(d);
+      setErrors(r.errors);
+      if (r.profile) void saveProfile(db, r.profile).then(() => setSaved(true));
+    }, 500);
+    return () => clearTimeout(t);
+  }, [d]);
 
-  const toggle = (e: Equipment) =>
-    setP({ ...p, equipment: p.equipment.includes(e) ? p.equipment.filter((x) => x !== e) : [...p.equipment, e] });
-
-  const setPoint = (i: number, patch: Partial<StartPointDraft>) => setPoints(points.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  if (!d || !data) return null;
+  const p = d.profile;
+  const setProfile = (patch: Partial<Profile>) => setD({ ...d, profile: { ...p, ...patch } });
+  const setActivity = (a: Activity, patch: Partial<Profile['activities'][Activity]>) =>
+    setProfile({ activities: { ...p.activities, [a]: { ...p.activities[a], ...patch } } });
+  const toggleEquipment = (e: Equipment) => setProfile({ equipment: p.equipment.includes(e) ? p.equipment.filter((x) => x !== e) : [...p.equipment, e] });
+  const addEquipment = (list: Equipment[]) => setProfile({ equipment: [...new Set([...p.equipment, ...list])] });
+  const setPoint = (i: number, patch: Partial<StartPointDraft>) => setD({ ...d, points: d.points.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
 
   const takeLocation = (i: number) => {
     if (!navigator.geolocation) return showToast('Standort ist auf diesem Gerät nicht verfügbar.');
@@ -53,105 +99,107 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
     );
   };
 
-  const save = async () => {
-    const errs: string[] = [];
-    const g = Number(gain);
-    const h = Number(hours.replace(',', '.'));
-    if (!Number.isFinite(g) || g < 100 || g > 4000) errs.push('Max. Höhenmeter: Zahl zwischen 100 und 4000.');
-    if (!Number.isFinite(h) || h < 1 || h > 16) errs.push('Max. Stunden: Zahl zwischen 1 und 16.');
-    const startPoints: StartPoint[] = [];
-    points.forEach((s, i) => {
-      const c = parseCoordinates(s.coords);
-      if (!s.name.trim()) errs.push(`Startpunkt ${i + 1}: Name fehlt.`);
-      if (!c) errs.push(`Startpunkt ${i + 1}: Koordinaten nicht lesbar (z. B. 47.3769, 8.5417 oder LV95 2'683'000, 1'248'000).`);
-      if (c && s.name.trim()) startPoints.push({ id: s.id, name: s.name.trim(), lat: c.lat, lon: c.lon });
-    });
-    if (startPoints.length === 0 && errs.length === 0) errs.push('Mindestens ein Startpunkt ist nötig.');
-    setErrors(errs);
-    if (errs.length) return;
-    await saveProfile(db, { ...p, fitness: { maxElevationGain: g, maxHours: h }, startPoints });
-    showToast('Profil gespeichert.');
-    if (welcome) navigate('admin', { tab: 'list' });
-  };
+  const ready = errors.length === 0 && d.points.some((s) => s.name.trim() && parseCoordinates(s.coords));
 
   return (
-    <div className="stack">
-      {welcome && (
-        <Notice>
-          Willkommen. Lege zuerst dein Profil an: Material, Risikostufe, Kondition und mindestens einen Startpunkt. Die Daten bleiben nur auf diesem Gerät.
-        </Notice>
-      )}
+    <>
+      <PageHead overline="Profil" title="Über dich" lead={saved ? 'Gespeichert.' : 'Änderungen werden automatisch gespeichert.'} />
+      {welcome && <Notice>Willkommen. Sag der App, welche Sportarten du machst, was du hast und wo du startest. Alles bleibt auf diesem Gerät.</Notice>}
+
+      <Section title="Sportarten und Niveau">
+        {ACTIVITIES.map((a) => {
+          const s = p.activities[a];
+          const missing = s.enabled ? missingEquipment(p, a) : [];
+          return (
+            <div key={a} className="activity-row">
+              <label className="check">
+                <input type="checkbox" checked={s.enabled} onChange={(e) => setActivity(a, { enabled: e.target.checked })} />
+                <strong>{ACTIVITY_NAME[a]}</strong>
+              </label>
+              {s.enabled && AVALANCHE_ACTIVITIES.includes(a) && (
+                <>
+                  <Choice<RiskLevel>
+                    className="compact"
+                    label={`Niveau ${ACTIVITY_NAME[a]}`}
+                    options={([1, 2, 3] as RiskLevel[]).map((l) => ({ value: l, label: `Stufe ${l}` }))}
+                    value={s.level}
+                    onChange={(level) => setActivity(a, { level })}
+                  />
+                  <span className="tiny">{LEVEL_TEXT[s.level]}</span>
+                </>
+              )}
+              {missing.length > 0 && (
+                <div className="row tiny">
+                  <span className="grow accent">Fehlt: {missing.map((m) => EQUIPMENT_LABEL[m]).join(', ')}</span>
+                  <button type="button" className="btn btn-ghost" onClick={() => addEquipment(missing)}>
+                    Habe ich
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <span className="tiny muted">Die Stufe begrenzt, welche Skitourenguru-Farben vorgeschlagen werden. Die Farbe selbst trägst du tagesaktuell auf dem Wochenende-Screen ein.</span>
+      </Section>
 
       <Section title="Material">
         <div className="choice wrap" role="group" aria-label="Material">
           {EQUIPMENT_ORDER.map((e) => (
-            <button key={e} type="button" aria-pressed={p.equipment.includes(e)} onClick={() => toggle(e)}>
+            <button key={e} type="button" aria-pressed={p.equipment.includes(e)} onClick={() => toggleEquipment(e)}>
               {EQUIPMENT_LABEL[e]}
-              {EQUIPMENT_HINT[e] && <span className="sr-only"> ({EQUIPMENT_HINT[e]})</span>}
             </button>
           ))}
         </div>
-        <span className="tiny muted">LVS-Set = LVS, Sonde, Schaufel. Skitouren brauchen Tourenski, Felle und LVS-Set; nicht signalisierte Schneeschuh-Touren Schneeschuhe und LVS-Set.</span>
+        <span className="tiny muted">LVS-Set = LVS, Sonde, Schaufel.</span>
       </Section>
 
-      <Section title="Risikostufe" aside="Obergrenze">
-        <Choice<RiskLevel>
-          label="Risikostufe"
-          options={[1, 2, 3].map((l) => ({ value: l as RiskLevel, label: RISK_LEVEL_LABEL[l as RiskLevel].title }))}
-          value={p.riskLevel}
-          onChange={(riskLevel) => setP({ ...p, riskLevel })}
-        />
-        <span className="small">{RISK_LEVEL_LABEL[p.riskLevel].text}</span>
-        <span className="tiny muted">Das Risiko stammt nur aus den Skitourenguru-Farben, die du eintragst. Ohne aktuelle Farbe wird keine Tour vorgeschlagen.</span>
-      </Section>
-
-      <Section title="Grundkondition" aside="an einem normalen Tag">
-        <div className="grid-2">
-          <Field label="Max. Höhenmeter" htmlFor="gain">
-            <input id="gain" className="input" inputMode="numeric" value={gain} onChange={(e) => setGain(e.target.value)} />
+      <Section title="Kondition" aside="an einem normalen Tag">
+        <div className="grid-3">
+          <Field label="Höhenmeter" htmlFor="gain">
+            <input id="gain" className="input" inputMode="numeric" value={d.gain} onChange={(e) => setD({ ...d, gain: e.target.value })} />
           </Field>
-          <Field label="Max. Stunden" htmlFor="hours">
-            <input id="hours" className="input" inputMode="decimal" value={hours} onChange={(e) => setHours(e.target.value)} />
+          <Field label="Stunden" htmlFor="hours">
+            <input id="hours" className="input" inputMode="decimal" value={d.hours} onChange={(e) => setD({ ...d, hours: e.target.value })} />
+          </Field>
+          <Field label="Abfahrt ab" htmlFor="start">
+            <input
+              id="start"
+              className="input"
+              type="time"
+              value={formatTime(p.earliestStart)}
+              onChange={(e) => e.target.value && setProfile({ earliestStart: parseTime(e.target.value) })}
+            />
           </Field>
         </div>
       </Section>
 
-      <Section title="Früheste Abfahrt">
-        <Field label="Uhrzeit" hint="Vor Sonnenaufgang erlaubt – öffnet Morgenlicht und Nebelmeer." htmlFor="start">
-          <input
-            id="start"
-            className="input"
-            type="time"
-            value={formatTime(p.earliestStart)}
-            onChange={(e) => e.target.value && setP({ ...p, earliestStart: parseTime(e.target.value) })}
-          />
-        </Field>
-      </Section>
-
-      <Section title="Startpunkte" aside="z. B. Zuhause, Ferienhaus">
-        {points.map((s, i) => (
+      <Section title="Startpunkte" aside="für Anreisezeiten">
+        {d.points.map((s, i) => (
           <div key={s.id} className="card">
-            <Field label="Name" htmlFor={`sp-name-${i}`}>
-              <input id={`sp-name-${i}`} className="input" value={s.name} onChange={(e) => setPoint(i, { name: e.target.value })} />
-            </Field>
-            <Field label="Koordinaten" hint="swisstopo-Link, LV95 (2'683'000, 1'248'000) oder WGS84 (47.3769, 8.5417)" htmlFor={`sp-coords-${i}`}>
-              <input id={`sp-coords-${i}`} className="input" inputMode="decimal" value={s.coords} placeholder="47.3769, 8.5417" onChange={(e) => setPoint(i, { coords: e.target.value })} />
-            </Field>
+            <div className="grid-2">
+              <Field label="Name" htmlFor={`sp-name-${i}`}>
+                <input id={`sp-name-${i}`} className="input" value={s.name} placeholder="z. B. Zuhause" onChange={(e) => setPoint(i, { name: e.target.value })} />
+              </Field>
+              <Field label="Koordinaten" htmlFor={`sp-coords-${i}`}>
+                <input id={`sp-coords-${i}`} className="input" inputMode="url" value={s.coords} placeholder="47.37, 8.54" onChange={(e) => setPoint(i, { coords: e.target.value })} />
+              </Field>
+            </div>
             <div className="row">
               <button type="button" className="btn grow" onClick={() => takeLocation(i)}>
                 Aktueller Standort
               </button>
-              {points.length > 1 && (
-                <button type="button" className="btn btn-danger" onClick={() => setPoints(points.filter((_, j) => j !== i))}>
+              {d.points.length > 1 && (
+                <button type="button" className="btn btn-danger" onClick={() => setD({ ...d, points: d.points.filter((_, j) => j !== i) })}>
                   Entfernen
                 </button>
               )}
             </div>
           </div>
         ))}
-        <button type="button" className="btn" onClick={() => setPoints([...points, { id: newId('sp'), name: '', coords: '' }])}>
+        <button type="button" className="btn" onClick={() => setD({ ...d, points: [...d.points, { id: newId('sp'), name: '', coords: '' }] })}>
           Startpunkt hinzufügen
         </button>
+        <span className="tiny muted">Koordinaten als swisstopo-Link, LV95 oder WGS84. Auf dem Wochenende-Screen kannst du auch «Standort» wählen.</span>
       </Section>
 
       {errors.length > 0 && (
@@ -161,9 +209,23 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
           ))}
         </div>
       )}
-      <button type="button" className="btn btn-primary" onClick={() => void save()}>
-        Profil speichern
-      </button>
-    </div>
+
+      {(welcome || !data.exists) && (
+        <button type="button" className="btn btn-primary" disabled={!ready} onClick={() => navigate('list', { welcome: '1' })}>
+          Weiter: deine Liste
+        </button>
+      )}
+
+      <Section title="Daten">
+        <div className="grid-2">
+          <button type="button" className="btn" onClick={() => navigate('backup')}>
+            Backup & Import
+          </button>
+          <button type="button" className="btn" onClick={() => navigate('stats')}>
+            Auswertung
+          </button>
+        </div>
+      </Section>
+    </>
   );
 }
