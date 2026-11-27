@@ -38,9 +38,9 @@ export const THRESHOLDS = {
   // Travel estimate when no manual travel time is stored for a start point
   travelEstimate: {
     /** Road distance ≈ air distance × factor. */
-    roadFactor: 1.4,
+    roadFactor: 1.3,
     /** Average speed incl. mountain roads, km/h. */
-    averageSpeedKmh: 55,
+    averageSpeedKmh: 70,
     /** Fixed extra minutes (parking, last kilometres). */
     fixedMinutes: 10,
   },

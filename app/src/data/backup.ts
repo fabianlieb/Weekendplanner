@@ -68,7 +68,7 @@ const isNum = (v: unknown, min = -Infinity, max = Infinity): v is number => type
 const isStr = (v: unknown): v is string => typeof v === 'string';
 const isDate = (v: unknown): v is string => isStr(v) && DATE_RE.test(v);
 
-class Errors {
+export class Errors {
   list: string[] = [];
   add(path: string, msg: string) {
     this.list.push(`${path}: ${msg}`);
