@@ -2,8 +2,14 @@ import { useEffect } from 'react';
 import { getDb } from '../data/db';
 import { hasProfile } from '../data/repositories';
 import { AdminView } from './admin/AdminView';
-import { Attribution, PageHead, Toast } from './components';
+import { Attribution, Toast } from './components';
 import { navigate, useRoute, type View } from './router';
+import { CheckView } from './weekend/CheckView';
+import { DetailView } from './weekend/DetailView';
+import { FeedbackView } from './weekend/FeedbackView';
+import { StatsView } from './weekend/StatsView';
+import { SuggestionsView } from './weekend/SuggestionsView';
+import { ThursdayView } from './weekend/ThursdayView';
 
 const TABS: { view: View; label: string; matches: View[] }[] = [
   { view: 'thursday', label: 'Wochenende', matches: ['thursday', 'suggestions', 'detail'] },
@@ -11,17 +17,6 @@ const TABS: { view: View; label: string; matches: View[] }[] = [
   { view: 'feedback', label: 'Feedback', matches: ['feedback', 'stats'] },
   { view: 'admin', label: 'Verwaltung', matches: ['admin'] },
 ];
-
-function Placeholder({ title }: { title: string }) {
-  return (
-    <>
-      <PageHead overline="Im Aufbau" title={title} lead="Dieser Screen folgt in Etappe 4." />
-      <button type="button" className="btn btn-dark" onClick={() => navigate('admin')}>
-        Zur Verwaltung
-      </button>
-    </>
-  );
-}
 
 export function App() {
   const route = useRoute();
@@ -39,15 +34,23 @@ export function App() {
     case 'admin':
       content = <AdminView params={route.params} />;
       break;
+    case 'suggestions':
+      content = <SuggestionsView />;
+      break;
+    case 'detail':
+      content = <DetailView key={route.params.id} id={route.params.id} />;
+      break;
     case 'check':
-      content = <Placeholder title="Vorabend-Check" />;
+      content = <CheckView />;
       break;
     case 'feedback':
+      content = <FeedbackView />;
+      break;
     case 'stats':
-      content = <Placeholder title="Feedback" />;
+      content = <StatsView />;
       break;
     default:
-      content = <Placeholder title="Dein Wochenende" />;
+      content = <ThursdayView />;
   }
 
   return (

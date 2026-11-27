@@ -40,6 +40,6 @@ describe('coordinates', () => {
 
   it('formats and links', () => {
     expect(formatCoordinates({ lat: 47.37691, lon: 8.54167 })).toBe('47.3769, 8.5417');
-    expect(swisstopoUrl({ lat: 46.95108, lon: 7.43864 })).toMatch(/^https:\/\/map\.geo\.admin\.ch\/\?lang=de&E=26000\d\d&N=12000\d\d&zoom=10&crosshair=marker$/);
+    expect(swisstopoUrl({ lat: 46.95108, lon: 7.43864 })).toMatch(/^https:\/\/map\.geo\.admin\.ch\/#\/map\?lang=de&center=26000\d\d,12000\d\d&z=7&crosshair=marker&/);
   });
 });

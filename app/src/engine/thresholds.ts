@@ -170,14 +170,23 @@ export const THRESHOLDS = {
     mixTolerance: 15,
     /** Plan B bonus when it does not depend on the avalanche rating while suggestion 1 does. */
     planBIndependenceBonus: 20,
-    planBOtherDayBonus: 5,
+    /** Same day if suggestion 1 depends on the avalanche rating, else another day. */
+    planBDayBonus: 8,
   },
 
   photoAddOn: {
-    /** Photo spots within this distance (km) of the outing are considered. */
-    radiusKm: 15,
-    /** Light events may be this many minutes outside the activity window. */
-    windowSlackMinutes: 60,
+    /** Photo spots within this air distance (km) are considered automatically; assigned spots always. */
+    radiusKm: 10,
+    /** Closer than this (km) counts as walking distance: no drive between spot and activity. */
+    walkingDistanceKm: 1.5,
+    /** Conservative drive between spot and activity (ridges and detours are not known). */
+    transfer: { roadFactor: 2.0, averageSpeedKmh: 50, fixedMinutes: 15 },
+    /** Be at the spot this long before sunrise/sunset. */
+    arriveBeforeLightMinutes: 30,
+    /** Stay this long after sunrise/sunset. */
+    shootAfterLightMinutes: 20,
+    /** A ski day may start this much later because of a morning photo. */
+    skiDelayMaxMinutes: 60,
   },
 
   eveningCheck: {

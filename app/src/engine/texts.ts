@@ -115,7 +115,8 @@ export const SCHEDULE = {
   startDescent: 'Abfahrt ins Tal',
   endTour: 'Zurück am Ausgangspunkt',
   arriveSpot: 'Ankunft am Fotospot',
-  photo: (label: string, spot: string) => `${label} – Fotospot ${spot}`,
+  arrivePhotoSpot: (spot: string) => `Ankunft Fotospot ${spot}`,
+  photo: (label: string) => label,
 } as const;
 
 export const PLAN_B_REASON = {

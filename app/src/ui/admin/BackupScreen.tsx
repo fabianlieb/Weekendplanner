@@ -2,29 +2,9 @@ import { useState } from 'react';
 import { backupFileName, exportData, importJson, type ImportMode, type ValidationResult } from '../../data/backup';
 import { getDb } from '../../data/db';
 import { Choice, Notice, Section, showToast, useAsync } from '../components';
+import { shareOrDownload } from '../files';
 import { SEED_CANDIDATES } from '../../data/seed';
 import { loadSeed } from './CandidatesScreen';
-
-async function shareOrDownload(name: string, text: string): Promise<void> {
-  const file = new File([text], name, { type: 'application/json' });
-  // On the iPhone the share sheet offers saving to the Files app.
-  if (navigator.canShare?.({ files: [file] })) {
-    try {
-      await navigator.share({ files: [file], title: name });
-      return;
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return;
-    }
-  }
-  const url = URL.createObjectURL(file);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export function BackupScreen() {
   const db = getDb();

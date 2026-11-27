@@ -4,7 +4,7 @@ import { candidates, freshRisks, input, profile } from '../engine/__fixtures__/s
 import { BACKUP_FORMAT, exportData, importJson, validateImport } from './backup';
 import { PlannerDB } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
-import { chosenSuggestion, computeSuggestions, runEveningCheck, weekendKey } from './planner';
+import { adoptAlternative, chosenSuggestion, computeSuggestions, feedbackWeekend, runEveningCheck, summariseExclusions, weekendKey } from './planner';
 import {
   DEFAULT_PROFILE,
   choosePlan,
@@ -173,6 +173,41 @@ describe('planner (storage + weather + engine)', () => {
     await choosePlan(db, plan.weekend, plan.suggestions[0]!.id);
     const again = await computeSuggestions(db, input, { now: new Date(THURSDAY.getTime() + 60000), fetchFn: weatherFetch() });
     expect(chosenSuggestion(again.plan)?.id).toBe(plan.suggestions[0]!.id);
+  });
+
+  it('stores a summary of why candidates were not suggested', async () => {
+    await seed();
+    await db.riskEntries.clear();
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    expect(plan.excludedSummary?.risk_unknown).toBe(4); // 3 tours + 1 unsignposted trail without colour
+    expect(plan.suggestions.every((s) => !s.avalancheDependent)).toBe(true);
+  });
+
+  it('summary counts only candidates without any valid option', () => {
+    const ex = [
+      { candidateId: 'a', day: 'sat' as const, slot: 'day' as const, reasons: ['travel_too_long' as const] },
+      { candidateId: 'a', day: 'sun' as const, slot: 'day' as const, reasons: ['travel_too_long' as const, 'day_free' as const] },
+      { candidateId: 'b', day: 'sat' as const, slot: 'day' as const, reasons: ['conditions_poor' as const] },
+    ];
+    expect(summariseExclusions(ex, new Set(['b']))).toEqual({ travel_too_long: 1 });
+  });
+
+  it('adopting an alternative from the evening check makes it the chosen Plan B', async () => {
+    await seed();
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const alt = { ...plan.suggestions[1]!, id: 'other:2026-12-05:day', candidateId: 'other' };
+    await adoptAlternative(db, plan.weekend, alt);
+    const stored = await db.weekendPlans.get(plan.weekend);
+    expect(stored?.chosenId).toBe(alt.id);
+    expect(stored?.planB?.id).toBe(alt.id);
+    expect(chosenSuggestion(stored!)?.id).toBe(alt.id);
+  });
+
+  it('feedback refers to the current weekend on Sat/Sun, else the last one', () => {
+    expect(feedbackWeekend('2026-12-05')).toBe('2026-12-05'); // Sat
+    expect(feedbackWeekend('2026-12-06')).toBe('2026-12-05'); // Sun
+    expect(feedbackWeekend('2026-12-07')).toBe('2026-12-05'); // Mon
+    expect(feedbackWeekend('2026-12-11')).toBe('2026-12-05'); // Fri
   });
 
   it('weekend key', () => {

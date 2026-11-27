@@ -44,8 +44,8 @@ export function formatCoordinates(p: LatLon): string {
   return `${p.lat.toFixed(4)}, ${p.lon.toFixed(4)}`;
 }
 
-/** Link to map.geo.admin.ch with a marker at the point. */
-export function swisstopoUrl(p: LatLon, zoom = 10): string {
+/** Link to map.geo.admin.ch (viewer format verified 2026-11-27) with a marker at the point. z=7 ≈ 500 m scale bar. */
+export function swisstopoUrl(p: LatLon, zoom = 7): string {
   const { e, n } = wgs84ToLv95(p);
-  return `https://map.geo.admin.ch/?lang=de&E=${e}&N=${n}&zoom=${zoom}&crosshair=marker`;
+  return `https://map.geo.admin.ch/#/map?lang=de&center=${e},${n}&z=${zoom}&crosshair=marker&bgLayer=ch.swisstopo.pixelkarte-farbe&topic=ech`;
 }

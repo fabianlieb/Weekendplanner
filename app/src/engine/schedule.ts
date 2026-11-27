@@ -41,10 +41,18 @@ export function buildSchedule(input: {
       break;
   }
 
-  if (photo) items.push({ time: photo.time, label: SCHEDULE.photo(photo.lightLabel, photo.spotName) });
+  if (photo) {
+    items.push({ time: photo.time - THRESHOLDS.photoAddOn.arriveBeforeLightMinutes, label: SCHEDULE.arrivePhotoSpot(photo.spotName) });
+    items.push({ time: photo.time, label: SCHEDULE.photo(photo.lightLabel) });
+  }
   items.push({ time: input.back, label: SCHEDULE.back(startPointName) });
-  // Display in 5-minute steps; the departure is rounded down so the plan never gets later.
+  // Plan items in 5-minute steps (departure rounded down so the plan never gets later);
+  // light events (sunrise, sunset, blue hour) stay to the minute.
+  const exact = new Set<string>([...Object.values(LIGHT_LABEL)]);
   return items
     .sort((a, b) => a.time - b.time)
-    .map((i, idx) => ({ ...i, time: idx === 0 ? Math.floor(i.time / 5) * 5 : Math.round(i.time / 5) * 5 }));
+    .map((i, idx) => ({
+      ...i,
+      time: exact.has(i.label) ? Math.round(i.time) : idx === 0 ? Math.floor(i.time / 5) * 5 : Math.round(i.time / 5) * 5,
+    }));
 }

@@ -4,6 +4,7 @@ import { eveningCheck } from './eveningCheck';
 import { capacity, feedbackAdjustment, fitScore } from './fit';
 import { MANUAL_SOURCE } from './risk';
 import { evaluateOptions, suggest, travelFor } from './suggest';
+import { transferMinutes } from './photoAddOn';
 import { feedbackStats } from './stats';
 import { CHECK_HOLDS, CHECK_REASON, PLAN_B_REASON } from './texts';
 import type { Candidate, Feedback, Suggestion } from './types';
@@ -139,6 +140,12 @@ describe('stage 4 – selection', () => {
     }
   });
 
+  it('Plan B for a tour stays on the same day when an avalanche-free option exists', () => {
+    const first = result.suggestions[0]!;
+    expect(first.avalancheDependent).toBe(true); // scenario: a green tour ranks first
+    expect(result.planB!.day).toBe(first.day);
+  });
+
   it('Plan B for a ski day on Saturday moves to another day when the weather turns', () => {
     const onlySat = (c: Candidate, d: string, p: 'valley' | 'summit') => (d === SAT ? goodWeather(c, d, p) : { ...SUNNY, cloudCover: 60, sunshineMinutes: 25 });
     const r = suggest(
@@ -159,6 +166,34 @@ describe('stage 4 – selection', () => {
     expect(ski.schedule.some((i) => i.label.includes('Fotospot Chäserrugg'))).toBe(true);
     const spot = byId('chaeserrugg');
     expect(haversineKm(spot.summit, byId('flumserberg').summit)).toBeLessThan(15);
+  });
+
+  it('photo add-ons are feasible: at the spot before the light, back within budget', () => {
+    for (const budget of ['full', 'half'] as const) {
+      const r = suggest(context({ input: { ...input, budget: { sat: budget, sun: budget } } }));
+      for (const s of [...r.suggestions, ...(r.planB ? [r.planB] : [])]) {
+        if (!s.photo) continue;
+        const dep = s.schedule[0]!.time;
+        const back = s.schedule.at(-1)!.time;
+        expect(dep, s.id).toBeLessThanOrEqual(s.photo.time - 30);
+        expect(back, s.id).toBeGreaterThanOrEqual(s.photo.time + 20);
+        expect(back - dep, s.id).toBeLessThanOrEqual((budget === 'full' ? 12 : 6) * 60 + 5);
+        expect(dep, s.id).toBeGreaterThanOrEqual(profile.earliestStart - 5);
+      }
+    }
+  });
+
+  it('transfer between spot and activity is estimated conservatively', () => {
+    expect(transferMinutes(byId('chaeserrugg').summit, byId('flumserberg').valley)).toBeGreaterThanOrEqual(30);
+    expect(transferMinutes(byId('flumserberg').valley, { ...byId('flumserberg').valley, lat: byId('flumserberg').valley.lat + 0.005 })).toBe(0);
+  });
+
+  it('a tour does not get a sunrise spot it cannot reach before the start', () => {
+    // Tour starts 08:30; Chäserrugg sunrise ~07:50 plus transfer does not fit → evening or nothing.
+    const r = suggest(context({ candidates: candidates.filter((c) => c.id === 'pizol' || c.id === 'chaeserrugg'), riskEntries: freshRisks() }));
+    for (const s of r.suggestions.filter((x) => x.candidateId === 'pizol')) {
+      if (s.photo) expect(s.photo.lightLabel).toBe('Sonnenuntergang');
+    }
   });
 
   it('no photo add-on without a camera', () => {

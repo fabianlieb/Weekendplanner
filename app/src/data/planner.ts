@@ -1,9 +1,10 @@
 // Glue between storage, weather and the engine. The screens call these functions.
 
 import { eveningCheck, type CheckResult } from '../engine/eveningCheck';
-import { suggest } from '../engine/suggest';
-import type { IsoDate, Suggestion, WeekendInput } from '../engine/types';
-import { addDays, upcomingWeekend, zurichToday } from '../engine/util';
+import { evaluateOptions, suggest } from '../engine/suggest';
+import type { Exclusion, ExclusionReason, IsoDate, PlanB, Suggestion, WeekendInput } from '../engine/types';
+import { PLAN_B_REASON } from '../engine/texts';
+import { addDays, upcomingWeekend, weekday, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
 import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, saveLastInput, saveWeekendPlan } from './repositories';
@@ -16,6 +17,31 @@ export interface PlannerOptions extends WeatherLoadOptions {
 export function weekendKey(today: IsoDate): IsoDate {
   const w = upcomingWeekend(today);
   return (w.sat ?? w.sun) as IsoDate;
+}
+
+/** Saturday of the weekend that feedback refers to (the current one on Sat/Sun, else the last one). */
+export function feedbackWeekend(today: IsoDate): IsoDate {
+  const wd = weekday(today);
+  return addDays(today, wd === 6 ? 0 : -((wd + 1) % 7));
+}
+
+/** Per reason: how many candidates were not suggested at all (no valid option on any day). */
+export function summariseExclusions(excluded: readonly Exclusion[], suggestedOrValid: ReadonlySet<string>): Partial<Record<ExclusionReason, number>> {
+  const perCandidate = new Map<string, Set<ExclusionReason>>();
+  for (const e of excluded) {
+    if (suggestedOrValid.has(e.candidateId)) continue;
+    const set = perCandidate.get(e.candidateId) ?? new Set<ExclusionReason>();
+    e.reasons.forEach((r) => set.add(r));
+    perCandidate.set(e.candidateId, set);
+  }
+  const out: Partial<Record<ExclusionReason, number>> = {};
+  for (const reasons of perCandidate.values()) {
+    for (const r of reasons) {
+      if (r === 'day_free' || r === 'inactive') continue;
+      out[r] = (out[r] ?? 0) + 1;
+    }
+  }
+  return out;
 }
 
 export interface ComputeResult {
@@ -31,7 +57,9 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { ...opts, now });
 
-  const result = suggest({ profile, input, candidates, riskEntries, weather, today, feedback });
+  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback };
+  const result = suggest(ctx);
+  const validIds = new Set(evaluateOptions(ctx).valid.map((o) => o.option.candidate.id));
   const weekend = weekendKey(today);
   const previous = await getWeekendPlan(db, weekend);
   const plan: WeekendPlan = {
@@ -44,6 +72,8 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     // Recomputing drops a chosen plan only if it no longer exists.
     ...(previous?.chosenId && [...result.suggestions, result.planB].some((s) => s?.id === previous.chosenId) ? { chosenId: previous.chosenId } : {}),
     checks: previous?.checks ?? [],
+    excludedSummary: summariseExclusions(result.excluded, validIds),
+    weather: weatherMeta,
   };
   await saveWeekendPlan(db, plan);
   await saveLastInput(db, input);
@@ -91,4 +121,17 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
     ...(result.status === 'switch' ? { reason: result.reason, ...(result.alternative ? { alternativeId: result.alternative.id } : {}) } : {}),
   });
   return { status: 'checked', plan, chosen, result, weather: weatherMeta };
+}
+
+/** Evening check switched: take the alternative as Plan B and choose it. */
+export async function adoptAlternative(db: PlannerDB, weekend: IsoDate, alternative: PlanB | Suggestion): Promise<void> {
+  const plan = await getWeekendPlan(db, weekend);
+  if (!plan) return;
+  const known = plan.suggestions.some((s) => s.id === alternative.id);
+  const planB: PlanB = 'planBReason' in alternative ? alternative : { ...alternative, planBReason: PLAN_B_REASON.generic };
+  await saveWeekendPlan(db, { ...plan, ...(known ? {} : { planB }), chosenId: alternative.id });
+}
+
+export function findSuggestion(plan: WeekendPlan, id: string): Suggestion | PlanB | undefined {
+  return [...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].find((s) => s.id === id);
 }

@@ -10,6 +10,8 @@ import { buildSchedule } from './schedule';
 import { PLAN_B_REASON, activityLabel } from './texts';
 import { THRESHOLDS } from './thresholds';
 import { computeTiming } from './timing';
+import { travelFor } from './travel';
+export { travelFor } from './travel';
 import type {
   Activity,
   AstroFn,
@@ -27,7 +29,6 @@ import type {
   Profile,
   RiskEntry,
   Slot,
-  StartPoint,
   Suggestion,
   SuggestionResult,
   WeekendInput,
@@ -78,13 +79,6 @@ export function slotsFor(c: Candidate): Slot[] {
   return c.eveningPossible ? ['day', 'evening'] : ['day'];
 }
 
-export function travelFor(c: Candidate, sp: StartPoint): { minutes: number; estimated: boolean } {
-  const manual = c.travelMinutes[sp.id];
-  if (manual !== undefined && Number.isFinite(manual)) return { minutes: manual, estimated: false };
-  const t = THRESHOLDS.travelEstimate;
-  const km = haversineKm(sp, c.valley) * t.roadFactor;
-  return { minutes: Math.round((km / t.averageSpeedKmh) * 60 + t.fixedMinutes), estimated: true };
-}
 
 // ---------------------------------------------------------------------------
 // Evaluation of all options
@@ -173,15 +167,27 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
 
         // Photo add-on for sport options
         let back = timing.back;
+        let departure = timing.departure;
+        let activityStart = timing.activityStart;
         let photo: Suggestion['photo'];
         if (activity !== 'photo' && profile.equipment.includes('camera')) {
-          const best = bestPhotoAddOn({ candidate: c, all: ctx.candidates, date, timing, weather: ctx.weather, astro });
+          const best = bestPhotoAddOn({
+            candidate: c,
+            all: ctx.candidates,
+            date,
+            timing,
+            startPoint,
+            earliestStart: profile.earliestStart,
+            budgetMinutes: THRESHOLDS.time.budgetHours[budget] * 60,
+            flexibleStart: activity === 'ski',
+            weather: ctx.weather,
+            astro,
+          });
           if (best) {
-            const newBack = Math.max(back, best.lightEnd + travel.minutes);
-            if (newBack - timing.departure <= THRESHOLDS.time.budgetHours[budget] * 60) {
-              photo = best.addOn;
-              back = newBack;
-            }
+            photo = best.addOn;
+            back = best.back;
+            departure = best.departure;
+            activityStart = best.activityStart;
           }
         }
 
@@ -205,7 +211,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
           fitScore: Math.round(fit),
           sub: Object.fromEntries(Object.entries(cond.sub).map(([k, v]) => [k, Math.round(v)])),
           reasons: buildReasons({ sub: cond.sub, facts: cond.facts, risk, ...(photo ? { photo } : {}), isPhotoActivity: activity === 'photo' }),
-          schedule: buildSchedule({ option, timing, startPointName: startPoint.name, astro: activity === 'photo' ? astroSummit : astroValley, ...(photo ? { photo } : {}), back }),
+          schedule: buildSchedule({ option, timing: { ...timing, departure, activityStart }, startPointName: startPoint.name, astro: activity === 'photo' ? astroSummit : astroValley, ...(photo ? { photo } : {}), back }),
           travel: { ...travel, startPointName: startPoint.name },
           ...(photo ? { photo } : {}),
           ...(c.priceChf !== undefined ? { priceChf: c.priceChf } : {}),
@@ -307,8 +313,12 @@ export function selectPlanB(valid: readonly ScoredOption[], chosen: readonly Sco
   for (const o of valid) {
     if (o.option.candidate.id === first.option.candidate.id) continue;
     let score = o.total;
-    if (first.suggestion.avalancheDependent && !o.suggestion.avalancheDependent) score += s.planBIndependenceBonus;
-    if (o.option.day !== first.option.day) score += s.planBOtherDayBonus;
+    // Avalanche risk can rise → an option without avalanche dependency on the same day.
+    // Weather can turn → another day helps.
+    if (first.suggestion.avalancheDependent) {
+      if (!o.suggestion.avalancheDependent) score += s.planBIndependenceBonus;
+      if (o.option.day === first.option.day) score += s.planBDayBonus;
+    } else if (o.option.day !== first.option.day) score += s.planBDayBonus;
     if (chosenIds.has(o.option.candidate.id)) score -= 5; // prefer something not already on the list
     if (score > bestScore) {
       bestScore = score;

@@ -3,6 +3,7 @@
 import { Dexie, type Table } from 'dexie';
 import type {
   Candidate,
+  ExclusionReason,
   Feedback,
   IsoDate,
   PlanB,
@@ -43,6 +44,9 @@ export interface WeekendPlan {
   planB?: PlanB;
   chosenId?: string;
   checks: EveningCheckRecord[];
+  /** Number of candidates not suggested at all, per reason (a candidate may count for several). */
+  excludedSummary?: Partial<Record<ExclusionReason, number>>;
+  weather?: { fetchedAt?: string; fromStaleCache: boolean; error?: string };
 }
 
 export interface WeatherCacheRow {
