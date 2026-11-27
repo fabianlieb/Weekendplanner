@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 Testplan – Wochenend-Planer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#D52B1E}
+</style>
+<style>
+html,body{margin:0;background:#E9E9E6}
+.wp-nav{font-family:Inter,Helvetica,Arial,sans-serif;font-size:13px;padding:14px 24px;display:flex;gap:20px;align-items:center}
+.wp-nav a{color:#111111;text-decoration:none;font-weight:600}
+.wp-stage{padding:0 24px 48px;display:flex;justify-content:center}
+.wp-stage > div{box-shadow:0 1px 0 rgba(0,0,0,.04)}
+@media print{.wp-nav{display:none}.wp-stage{padding:0}html,body{background:#FFFFFF}}
+</style>
+</head>
+<body>
+<nav class="wp-nav"><a href="index.html">← Alle Seiten</a><span style="color:#5E5E5E">05 Testplan</span></nav>
+<main class="wp-stage">
+<div style="width:1440px;height:1240px;box-sizing:border-box;padding:72px 80px;background:#FFFFFF;color:#111111;font-family:Inter,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;gap:48px">
+
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #111111;padding-bottom:14px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">
+<span><span style="color:#D52B1E">05</span>   Testplan</span>
+<span style="color:#5E5E5E;font-weight:500">Wochenend-Planer</span>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:start">
+<h2 style="grid-column:span 5;margin:0;font-size:44px;line-height:1.05;letter-spacing:-0.03em;font-weight:700">Testen, ob die Vorschläge passen.</h2>
+<div style="grid-column:7 / span 6;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;row-gap:20px">
+<div style="border-top:1px solid #111111;padding-top:10px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E5E5E">Kritischste Annahme</span><span style="font-size:18px;font-weight:600">Die Vorschläge passen zu mir</span></div>
+<div style="border-top:1px solid #111111;padding-top:10px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E5E5E">Testform</span><span style="font-size:18px;font-weight:600">Web-App direkt bauen</span></div>
+<div style="border-top:1px solid #111111;padding-top:10px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E5E5E">Dauer</span><span style="font-size:18px;font-weight:600">8 Wochenenden, Dez – Jan</span></div>
+<div style="border-top:1px solid #111111;padding-top:10px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#5E5E5E">Tester</span><span style="font-size:18px;font-weight:600">Nur du</span></div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px">
+
+<div style="grid-column:span 6;display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Annahmen-Matrix</span>
+<div style="display:flex;gap:12px">
+<div style="display:flex;flex-direction:column;justify-content:space-between;font-size:12px;color:#5E5E5E;width:64px;flex:none;padding:8px 0"><span>wichtig</span><span>weniger wichtig</span></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px">
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#111111;border:1px solid #111111">
+<div style="background:#FFFFFF;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:150px">
+<span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#D52B1E">Zuerst testen</span>
+<span style="font-size:15px;font-weight:600">Vorschläge passen</span>
+<span style="font-size:14px">Datenzugang Skitourenguru</span>
+<span style="font-size:14px">Plan B taugt</span>
+</div>
+<div style="background:#FFFFFF;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:150px">
+<span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Beobachten</span>
+<span style="font-size:14px">Rhythmus Do/Fr passt – du planst heute schon so</span>
+<span style="font-size:14px">MeteoSchweiz-Daten sind frei verfügbar</span>
+<span style="font-size:14px">Kurzbefehl öffnet die App zuverlässig</span>
+</div>
+<div style="background:#F4F4F2;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:120px">
+<span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#5E5E5E">Später</span>
+<span style="font-size:14px">Teilen wird genutzt</span>
+<span style="font-size:14px">Die Nische will die App auch</span>
+<span style="font-size:14px">Textbausteine klingen natürlich genug</span>
+</div>
+<div style="background:#F4F4F2;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:120px">
+<span style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#5E5E5E">Ok</span>
+<span style="font-size:14px">Web-App reicht als Plattform</span>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:#5E5E5E"><span>kaum belegt</span><span>belegt</span></div>
+</div>
+</div>
+</div>
+
+<div style="grid-column:8 / span 5;display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Erfolgskriterien <span style="color:#5E5E5E;font-weight:500">· Vorschlag</span></span>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #111111;padding-top:10px"><span style="font-size:36px;font-weight:700;color:#D52B1E;letter-spacing:-0.02em;width:150px;flex:none;white-space:nowrap">≥ 50 %</span><span style="font-size:15px;line-height:1.4">Umsetzungsrate: 4 von 8 Wochenenden mit umgesetztem Vorschlag</span></div>
+<div style="display:flex;align-items:baseline;gap:16px;border-top:1px solid #111111;padding-top:10px"><span style="font-size:36px;font-weight:700;color:#D52B1E;letter-spacing:-0.02em;width:150px;flex:none;white-space:nowrap">2 / 3</span><span style="font-size:15px;line-height:1.4">Vorschläge pro Woche als passend bewertet</span></div>
+</div>
+<span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-top:12px">Messung pro Wochenende</span>
+<div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px">
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 1</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 2</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 3</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 4</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 5</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 6</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 7</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+<div style="border:1px solid #111111;padding:8px 6px;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px"><b>WE 8</b><span style="width:14px;height:14px;border:1px solid #111111"></span></div>
+</div>
+<span style="font-size:14px;line-height:1.45;color:#5E5E5E">Pro Wochenende festhalten: umgesetzt ja/nein, Bewertung je Vorschlag, bei «nein» kurz den Grund.</span>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">Empfehlungen</span>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:24px">
+<div style="border-top:1px solid #111111;padding-top:12px;display:flex;gap:14px"><span style="font-size:28px;font-weight:700;color:#D52B1E;line-height:1">1</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px;font-weight:600">Logik vor Oberfläche</span><span style="font-size:14px;line-height:1.45;color:#5E5E5E">Erste Version gibt nur 3 Vorschläge mit Begründung aus.</span></div></div>
+<div style="border-top:1px solid #111111;padding-top:12px;display:flex;gap:14px"><span style="font-size:28px;font-weight:700;color:#D52B1E;line-height:1">2</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px;font-weight:600">Parallel 2 Wochen Concierge-Test</span><span style="font-size:14px;line-height:1.45;color:#5E5E5E">Vorschläge von Hand, bevor Code existiert: Stimmen die Kriterien?</span></div></div>
+<div style="border-top:1px solid #111111;padding-top:12px;display:flex;gap:14px"><span style="font-size:28px;font-weight:700;color:#D52B1E;line-height:1">3</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px;font-weight:600">Skitourenguru zuerst klären</span><span style="font-size:14px;line-height:1.45;color:#5E5E5E">Ob und wie die Daten genutzt werden dürfen – sonst fehlt ein Kernbaustein.</span></div></div>
+<div style="border-top:1px solid #111111;padding-top:12px;display:flex;gap:14px"><span style="font-size:28px;font-weight:700;color:#D52B1E;line-height:1">4</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:17px;font-weight:600">Kurzbefehl einrichten</span><span style="font-size:14px;line-height:1.45;color:#5E5E5E">Automation «Tageszeit» mit «Sofort ausführen» für Donnerstag und Vorabend. Gesperrt: kurz bestätigen.</span></div></div>
+</div>
+</div>
+
+</div>
+</main>
+</body>
+</html>
