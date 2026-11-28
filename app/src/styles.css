@@ -1255,3 +1255,75 @@ img.thumb {
   display: inline-flex;
   color: var(--muted);
 }
+
+/* --- Avalanche problems and GRM chart -------------------------------------- */
+.aval-problems {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+.aval-problem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.aspect-rose {
+  flex: none;
+}
+.aspect-rose path {
+  stroke: var(--bg);
+  stroke-width: 1;
+}
+.aspect-rose path.on {
+  fill: var(--accent);
+}
+.aspect-rose path.off {
+  fill: var(--hair);
+}
+.aspect-rose .rose-n {
+  font: 700 5px Inter, system-ui, sans-serif;
+  fill: var(--bg);
+}
+
+.grm-chart {
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.grm-chart svg {
+  width: 100%;
+  height: auto;
+}
+.grm-chart .zone-green {
+  fill: var(--risk-green);
+  opacity: 0.35;
+}
+.grm-chart .zone-orange {
+  fill: var(--risk-orange);
+  opacity: 0.35;
+}
+.grm-chart .zone-red {
+  fill: var(--risk-red);
+  opacity: 0.45;
+}
+.grm-chart .grid {
+  stroke: var(--bg);
+  stroke-width: 1;
+}
+.grm-chart .frame {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.grm-chart .axis {
+  font: 500 9px Inter, system-ui, sans-serif;
+  fill: var(--muted);
+}
+.grm-chart .point {
+  fill: var(--ink);
+}
+.grm-chart .point-halo {
+  fill: var(--bg);
+}

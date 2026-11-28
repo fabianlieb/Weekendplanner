@@ -114,7 +114,20 @@ export function buildRiskInfo(c: Candidate, status: RiskStatus, planDate: IsoDat
     ...info,
     ...(info.source === 'grm' && validForPlan ? { freshnessNote: '' } : {}),
     dangerLabel: slfDangerLabel(slf.level, slf.subdivision, slf.regionName, validForPlan),
-    slf: { level: slf.level, ...(slf.subdivision ? { subdivision: slf.subdivision } : {}), regionName: slf.regionName, validTo: slf.validTo, validForPlan },
+    slf: {
+      level: slf.level,
+      ...(slf.subdivision ? { subdivision: slf.subdivision } : {}),
+      regionName: slf.regionName,
+      validTo: slf.validTo,
+      validForPlan,
+      problems: slf.problems.map((p) => ({
+        type: p.type,
+        aspects: [...p.aspects],
+        ...(p.lower !== undefined ? { lower: p.lower } : {}),
+        ...(p.upper !== undefined ? { upper: p.upper } : {}),
+      })),
+      tour: { low: Math.min(c.valley.elevation, c.summit.elevation), high: Math.max(c.valley.elevation, c.summit.elevation) },
+    },
   };
 }
 
@@ -136,7 +149,12 @@ function buildRiskInfoBase(status: RiskStatus, planDate: IsoDate, applies: boole
       dangerLabel: dangerLabel(dangerLevel),
       bulletinHint: isGrm ? `${GRM_HINT} ${BULLETIN_HINT}` : BULLETIN_HINT,
       ...(color === 'red' ? { groupNote: RISK_GROUP_NOTE } : {}),
-      ...(details ? { grmNote: `Steilste Stelle ${GRM_AREA[details.area]}: ${details.slopeText}` } : {}),
+      ...(details
+        ? {
+            grmNote: `Steilste Stelle ${GRM_AREA[details.area]}: ${details.slopeText}`,
+            grm: { x: details.levelX, slopeDeg: details.slopeDeg, area: details.area, color: details.color },
+          }
+        : {}),
       ...(other && other.color !== color
         ? {
             bothNote: `${isGrm ? 'Skitourenguru' : 'Berechnung'}: ${RISK_COLOR_LABEL[other.color]} – die vorsichtigere Farbe gilt.`,

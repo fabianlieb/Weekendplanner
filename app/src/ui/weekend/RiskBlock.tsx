@@ -2,6 +2,8 @@ import type { RiskInfo } from '../../engine/types';
 import { RiskBadge } from '../components';
 import { LINKS } from '../labels';
 import { formatClock } from '../format';
+import { AvalancheProblems } from './AvalancheProblems';
+import { GrmChart } from './GrmChart';
 
 /** Risk info for tours and snowshoe trails: colour (with text), danger level, freshness, bulletin hint. */
 export function RiskBlock({ risk }: { risk: RiskInfo }) {
@@ -16,6 +18,8 @@ export function RiskBlock({ risk }: { risk: RiskInfo }) {
       {risk.grmNote && <span className="small">{risk.grmNote}</span>}
       <span className="small">{risk.dangerLabel}</span>
       {risk.slf && <span className="tiny muted">Automatisch geladen · gültig bis {formatClock(risk.slf.validTo)}</span>}
+      {risk.slf?.problems && <AvalancheProblems problems={risk.slf.problems} {...(risk.slf.tour ? { tour: risk.slf.tour } : {})} />}
+      {risk.grm && <GrmChart grm={risk.grm} />}
       {risk.freshnessNote && <span className="small muted">{risk.freshnessNote}</span>}
       {risk.groupNote && <strong className="small accent">{risk.groupNote}</strong>}
       <span className="small">

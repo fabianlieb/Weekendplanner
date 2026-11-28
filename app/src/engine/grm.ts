@@ -53,6 +53,8 @@ export function gradeDegrees(difficulty: string | undefined): number | undefined
 
 export interface GrmResult {
   color: RiskColor;
+  /** Danger level on the chart axis (e.g. 2+ → 2.83). */
+  levelX: number;
   /** Area used: 0 Spur, 1 Hang, 2 inkl. Auslauf. */
   area: 0 | 1 | 2;
   /** Slope in degrees used for the chart. */
@@ -93,11 +95,11 @@ export function grmColour(
     slopeDeg = g.classDegrees[c]!;
     slopeText = `${SLOPE_CLASS_LABEL[c]} (Karte Hangneigung)`;
   }
-  if (level >= 5) return { color: 'red', area, slopeDeg, slopeText };
+  if (level >= 5) return { color: 'red', levelX: lv, area, slopeDeg, slopeText };
   const greenBelow = g.greenAtLevel1 - g.greenPerLevel * (lv - 1);
   const redFrom = g.redAt.deg - g.redPerLevel * (lv - g.redAt.level);
   const color: RiskColor = slopeDeg < greenBelow ? 'green' : slopeDeg >= redFrom ? 'red' : 'orange';
-  return { color, area, slopeDeg, slopeText };
+  return { color, levelX: lv, area, slopeDeg, slopeText };
 }
 
 /** Computed entry for today, or undefined without bulletin or steepness (fail closed). */

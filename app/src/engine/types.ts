@@ -328,6 +328,15 @@ export type RiskStatus =
   | { kind: 'unknown'; reason: 'missing' | 'stale' }
   | { kind: 'known'; entry: RiskEntry; other?: RiskEntry };
 
+export interface AvalancheProblemInfo {
+  /** CAAML problem type, e.g. «wind_slab». */
+  type: string;
+  /** «N», «NE», … */
+  aspects: string[];
+  lower?: number;
+  upper?: number;
+}
+
 export interface RiskInfo {
   /** True for activities in avalanche terrain (tours, unsignposted trails). */
   applies: boolean;
@@ -344,7 +353,19 @@ export interface RiskInfo {
   /** «Stand Do 27.11. – am Vorabend neu prüfen». */
   freshnessNote: string;
   /** Official SLF danger level of the place's warning region (loaded automatically). */
-  slf?: { level: DangerLevel; subdivision?: 'minus' | 'neutral' | 'plus'; regionName: string; validTo: string; validForPlan: boolean };
+  slf?: {
+    level: DangerLevel;
+    subdivision?: 'minus' | 'neutral' | 'plus';
+    regionName: string;
+    validTo: string;
+    validForPlan: boolean;
+    /** Avalanche problems of the bulletin (core zone: aspects and elevations). */
+    problems?: AvalancheProblemInfo[];
+    /** Elevation range of the tour (start to summit), m. */
+    tour?: { low: number; high: number };
+  };
+  /** The tour's point on the GRM chart (computed colour), for the small chart. */
+  grm?: { x: number; slopeDeg: number; area: 0 | 1 | 2; color: RiskColor };
   /** Where the colour comes from. */
   source?: 'manual' | 'grm';
   /** GRM details: «Steilste Stelle 35–40° im Bereich der Spur». */

@@ -231,6 +231,7 @@ Grundlage ist die **Grafische Reduktionsmethode** aus dem Merkblatt «Achtung La
 - **Grenzen** (aus der offiziellen Grafik gelesen): grün unter 40° bei Stufe 1,0, je Stufe 5° tiefer (35° bei 2,0 · 30° bei 3,0); rot ab 45° bei Stufe 1,87, je Stufe etwa 5,6° tiefer (40° bei 2,7 · 35° bei 3,6 · 30° bei 4,5). Pro Geländeklasse (Ersatzmessung) rechnet die App mit der Mitte (z. B. 37,5° für 35–40°), «unter 30°» mit 29°.
 - **Vorsichtig:** keine Erleichterung für günstige Expositionen oder Höhenlagen; ohne gültiges Bulletin oder ohne Steilheit keine Farbe (fail closed); eine eingetragene Skitourenguru-Farbe kann eine berechnete nie verbessern. Eigene Orte ohne Katalogroute: mit SAC-Grad bei gering und mässig berechnet, ab erheblich nur mit eingetragener Farbe.
 - **Zeit:** Am Donnerstag gilt das Bulletin von heute mit «am Vorabend neu prüfen»; der Vorabend-Check verlangt ein Bulletin, das den Tag des Plans abdeckt (erscheint um 17:00 am Vortag).
+- **Im Detailplan** zeigt der Risikoblock die Lawinenprobleme des Bulletins (z. B. «Triebschnee · N, NO, O · über 2400 m») mit Windrose der kritischen Expositionen und dem Hinweis, ob ihr Höhenbereich die Tour betrifft, sowie eine kleine GRM-Grafik mit dem Punkt der Tour.
 - Die Berechnung ist eine Planungshilfe und ersetzt die Beurteilung vor Ort nicht.
 
 ---
