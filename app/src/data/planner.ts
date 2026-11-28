@@ -8,7 +8,7 @@ import { spotRadar } from '../engine/radar';
 import type { Candidate, Exclusion, ExclusionReason, Feedback, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
 import { THRESHOLDS } from '../engine/thresholds';
-import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
+import { addDays, haversineKm, upcomingWeekend, weekday, zurichMinutes, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
 import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, listWeekendPlans, saveWeekendPlan } from './repositories';
@@ -312,7 +312,8 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   const preferences = await loadPreferences(db, feedback, plan.weekend);
   const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences };
   const planB = plan.planB && plan.planB.id !== chosen.id ? plan.planB : undefined;
-  const result = eveningCheck(ctx, chosen, planB);
+  // On the day itself (morning check) an alternative must still be reachable from now on.
+  const result = eveningCheck(ctx, chosen, planB, chosen.date === today ? { notBefore: zurichMinutes(now, today) } : {});
 
   await addEveningCheck(db, plan.weekend, {
     checkedAt: now.toISOString(),

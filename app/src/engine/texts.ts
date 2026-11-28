@@ -136,4 +136,5 @@ export const CHECK_REASON = {
 } as const;
 
 export const CHECK_HOLDS = 'Plan steht.';
+export const CHECK_NAME = { evening: 'Vorabend-Check', morning: 'Morgen-Check' } as const;
 export const CHECK_SWITCH = 'Wechsel auf Plan B';

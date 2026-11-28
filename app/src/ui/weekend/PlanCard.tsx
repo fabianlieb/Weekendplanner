@@ -1,7 +1,7 @@
 // «Dein Plan»: the chosen plan on top of the weekend screen, with the evening check built in.
 import type { WeekendPlan } from '../../data/db';
 import type { Candidate, PlanB, Suggestion } from '../../engine/types';
-import { CHECK_HOLDS } from '../../engine/texts';
+import { CHECK_HOLDS, CHECK_NAME } from '../../engine/texts';
 import { addDays, formatTime } from '../../engine/util';
 import { RiskBadge } from '../components';
 import { dayWithDate, weatherLine } from '../format';
@@ -14,6 +14,8 @@ import { navigate } from '../router';
 
 /** From this hour on the day before, the evening check is the main action. */
 const CHECK_FROM_HOUR = 16;
+/** On the day itself the morning check is offered from this hour until an hour after departure (else until noon). */
+const MORNING_FROM_HOUR = 4;
 
 export function PlanCard({
   plan,
@@ -35,7 +37,8 @@ export function PlanCard({
   const isTomorrow = chosen.date === addDays(today, 1);
   const past = chosen.date < today;
   const checkToday = [...plan.checks].reverse().find((c) => c.date === today);
-  const checkTime = isTomorrow && hour >= CHECK_FROM_HOUR;
+  const morningTime = isToday && hour >= MORNING_FROM_HOUR && (departure ? hour * 60 <= departure.time + 60 : hour < 12);
+  const checkTime = (isTomorrow && hour >= CHECK_FROM_HOUR) || morningTime;
   const nav = candidate ? navigationTarget(candidate) : undefined;
   const navUrl = nav ? googleMapsUrl(chosen.travel.mode === 'transit' && candidate ? candidate.valley : nav.point, chosen.travel.mode) : undefined;
   const badge = chosen.risk.applies ? (chosen.risk.color ? undefined : chosen.risk.signposted ? 'signalisiert' : 'unbekannt') : undefined;
@@ -77,7 +80,7 @@ export function PlanCard({
           </button>
         ) : checkTime && !checkToday ? (
           <button type="button" className="btn btn-primary grow" onClick={() => navigate('check')}>
-            Vorabend-Check machen
+            {morningTime ? CHECK_NAME.morning : CHECK_NAME.evening} machen
           </button>
         ) : (
           <button type="button" className="btn btn-dark grow" onClick={() => navigate(checkToday ? 'check' : 'detail', checkToday ? {} : { id: chosen.id })}>

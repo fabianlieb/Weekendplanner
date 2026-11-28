@@ -103,6 +103,7 @@ In der App **Kurzbefehle** → **Automation** → **+** → **Tageszeit**:
 |---|---|---|---|
 | Vorschläge | 18:00 | Wöchentlich, Donnerstag | `?view=thursday` |
 | Vorabend-Check | 18:00 | Wöchentlich, Freitag und Samstag | `?view=check` |
+| Morgen-Check (optional) | 05:30 | Wöchentlich, Samstag und Sonntag | `?view=check` |
 | Feedback | 19:00 | Wöchentlich, Sonntag | `?view=feedback` |
 
 Jeweils: **«Sofort ausführen»** wählen → **Weiter** → Aktion **«URL öffnen»** → den vollen Link einsetzen → **Fertig**. Ist das iPhone gesperrt, muss das Öffnen kurz bestätigt werden.
@@ -126,6 +127,7 @@ iOS öffnet «URL öffnen» je nach Version **in Safari statt in der installiert
    - Jede Karte zeigt das Wetter oben während der Aktivität, z. B. «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee», bei Bedarf «Nebelmeer wahrscheinlich».
    - Einen Vorschlag öffnen → **Plan wählen** (Leiste unten) → **Kalender-Knopf** (Kalender mit Plus) und **Navigation**. Der Plan erscheint dann oben als **«Dein Plan»** und bleibt erhalten, auch wenn er nach einer Aktualisierung nicht mehr vorgeschlagen würde.
 2. **Freitagabend** (bzw. Samstagabend für einen Sonntagsplan): Farben **von heute** eintragen → in «Dein Plan» **Vorabend-Check machen**. Ergebnis: «Plan steht.» oder «Wechsel auf Plan B» mit Grund → ggf. **Plan B übernehmen**.
+   **Am Tag selbst** (ab 04:00 bis eine Stunde nach der Abfahrt) bietet «Dein Plan» den **Morgen-Check**: gleiche Prüfung mit dem neuesten Wetter; Plan B nur, wenn er ab jetzt noch erreichbar ist. Für Touren braucht er die Farbe von heute (fail closed) – Skitourenguru und das SLF-Bulletin nach dem Morgen-Update ansehen.
 3. **Unterwegs:** SLF-Bulletin vor dem Start prüfen.
 4. **Sonntagabend:** Die Startseite fragt nach dem **Feedback** – umgesetzt? wie viele Vorschläge passten? wie streng war die Tour? Die Auswertung zeigt Umsetzungsrate und Ø passende Vorschläge über die 8 Testwochenenden.
 

@@ -24,7 +24,11 @@ function reasonText(reasons: readonly ExclusionReason[]): { code: ExclusionReaso
  * `ctx.today` is the evening-check date; risk entries must be from that date (fail closed).
  * Only the plan's date is evaluated.
  */
-export function eveningCheck(ctx: EngineContext, plan: Suggestion, previousPlanB?: Suggestion): CheckResult {
+/**
+ * `notBefore` (morning check on the day itself): alternatives must not depart before this time,
+ * minutes since midnight.
+ */
+export function eveningCheck(ctx: EngineContext, plan: Suggestion, previousPlanB?: Suggestion, opts: { notBefore?: number } = {}): CheckResult {
   const { valid, excluded } = evaluateOptions({ ...ctx, onlyDates: [plan.date] });
   const current = valid.find((o) => o.suggestion.id === plan.id);
   const cfg = THRESHOLDS.eveningCheck;
@@ -40,7 +44,9 @@ export function eveningCheck(ctx: EngineContext, plan: Suggestion, previousPlanB
     reason = reasonText(ex?.reasons ?? []);
   }
 
-  const alternatives = valid.filter((o) => o.option.candidate.id !== plan.candidateId);
+  const alternatives = valid.filter(
+    (o) => o.option.candidate.id !== plan.candidateId && (opts.notBefore === undefined || (o.suggestion.schedule[0]?.time ?? 0) >= opts.notBefore),
+  );
   const keep = previousPlanB ? alternatives.find((o) => o.suggestion.id === previousPlanB.id) : undefined;
   const best: ScoredOption | undefined =
     keep ??

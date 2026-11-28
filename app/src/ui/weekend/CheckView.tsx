@@ -1,6 +1,6 @@
 import { getDb } from '../../data/db';
 import { adoptAlternative, runEveningCheck } from '../../data/planner';
-import { CHECK_HOLDS, CHECK_REASON, CHECK_SWITCH, DAY_LABEL, shortDate } from '../../engine/texts';
+import { CHECK_HOLDS, CHECK_NAME, CHECK_REASON, CHECK_SWITCH, DAY_LABEL, shortDate } from '../../engine/texts';
 import type { Suggestion } from '../../engine/types';
 import { formatTime, zurichToday } from '../../engine/util';
 import { Notice, PageHead, showToast, useAsync } from '../components';
@@ -15,13 +15,19 @@ export function CheckView() {
   const db = getDb();
   const today = zurichToday();
   const { data: outcome, loading, reload } = useAsync(() => runEveningCheck(db), []);
+  // On the day of the plan itself it is the morning check.
+  const morning = !!outcome && 'chosen' in outcome && outcome.chosen?.date === today;
 
   const head = (
     <>
       <button type="button" className="back-link" onClick={() => navigate('thursday')}>
         ‹ Wochenende
       </button>
-      <PageHead overline={`${shortDate(today)} · Vorabend-Check`} title="Hält der Plan?" />
+      <PageHead
+        overline={`${shortDate(today)} · ${morning ? CHECK_NAME.morning : CHECK_NAME.evening}`}
+        title={morning ? 'Hält der Plan heute?' : 'Hält der Plan?'}
+        {...(morning ? { lead: 'Mit dem neuesten Wetter von heute früh. Bei Touren: SLF-Bulletin nach dem Morgen-Update (08:00) nochmals ansehen.' } : {})}
+      />
     </>
   );
   if (loading || !outcome) {
@@ -142,7 +148,9 @@ export function CheckView() {
           </button>
         </>
       ) : (
-        <Notice>Für {DAY_LABEL[chosen.day]} passt gerade keine Alternative. Vielleicht ist es ein Ruhetag.</Notice>
+        <Notice>
+          {morning ? 'Heute passt ab jetzt keine Alternative mehr.' : `Für ${DAY_LABEL[chosen.day]} passt gerade keine Alternative.`} Vielleicht ist es ein Ruhetag.
+        </Notice>
       )}
       {!riskMissing && (
         <button type="button" className="back-link" onClick={reload}>

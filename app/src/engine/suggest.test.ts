@@ -274,6 +274,18 @@ describe('evening check', () => {
     if (r.status === 'switch') expect(r.reason).toBe(CHECK_REASON.weatherWorse);
   });
 
+  it('morning check: alternatives must not depart before now', () => {
+    const worse = buildWeather(candidates, (c, d, p) => (c.id === tour.candidateId ? OVERCAST : goodWeather(c, d, p)));
+    const ctx = context({ today: friday, riskEntries: freshRisks(friday), weather: worse });
+    const any = eveningCheck(ctx, tour);
+    if (any.status !== 'switch' || !any.alternative) return;
+    const dep = any.alternative.schedule[0]!.time;
+    const later = eveningCheck(ctx, tour, undefined, { notBefore: dep + 1 });
+    if (later.status === 'switch' && later.alternative) expect(later.alternative.schedule[0]!.time).toBeGreaterThanOrEqual(dep + 1);
+    const tooLate = eveningCheck(ctx, tour, undefined, { notBefore: 24 * 60 });
+    expect(tooLate.status === 'switch' && tooLate.alternative).toBeFalsy();
+  });
+
   it('only the plan date is considered for alternatives', () => {
     const risks = freshRisks(friday).filter((e) => e.candidateId !== tour.candidateId);
     const r = eveningCheck(context({ today: friday, riskEntries: risks }), tour);
