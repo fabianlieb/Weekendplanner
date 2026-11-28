@@ -5,6 +5,7 @@ import { THRESHOLDS } from '../../engine/thresholds';
 import type { Suggestion } from '../../engine/types';
 import { formatTime } from '../../engine/util';
 import { Section, useAsync } from '../components';
+import { MiniIcon } from '../miniIcons';
 
 const clock = (iso: string) => iso.slice(11, 16);
 
@@ -12,8 +13,11 @@ function Leg({ label, c, from, to }: { label: string; c: Connection | undefined;
   if (!c) return <span className="small muted">{label}: keine passende Verbindung gefunden.</span>;
   return (
     <div className="transit-leg">
-      <span className="small">
-        <strong>{label}</strong> {clock(c.departure)} {from} → {clock(c.arrival)} {to}
+      <span className="small icon-line">
+        <MiniIcon name="train" />
+        <span>
+          <strong>{label}</strong> {clock(c.departure)} {from} → {clock(c.arrival)} {to}
+        </span>
       </span>
       <span className="tiny muted">
         {c.transfers === 0 ? 'direkt' : `${c.transfers}× umsteigen`}

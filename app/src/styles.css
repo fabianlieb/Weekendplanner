@@ -1116,6 +1116,18 @@ img.thumb {
   border: 1px solid var(--hair);
   background: var(--soft);
 }
+/* Quiet black-and-white background so the red route stands out. */
+.track-tiles {
+  filter: grayscale(1) contrast(0.85) brightness(1.08);
+  opacity: 0.75;
+}
+.track-credit {
+  font: 500 8px Inter, system-ui, sans-serif;
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 2px;
+}
 
 /* Public transport legs in the detail plan */
 .transit-leg {
@@ -1187,4 +1199,59 @@ img.thumb {
   min-height: 36px;
   display: flex;
   align-items: center;
+}
+
+/* --- Small symbols ---------------------------------------------------------- */
+.mini-icon {
+  flex: none;
+  vertical-align: -3px;
+}
+
+.weather-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.weather-chips.large {
+  font-size: 15px;
+  font-weight: 600;
+  gap: 6px 14px;
+}
+.weather-chips .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.weather-chips .chip .mini-icon {
+  color: var(--muted);
+}
+.weather-chips .chip-sun .mini-icon,
+.weather-chips .chip-fog .mini-icon {
+  color: var(--accent);
+}
+
+.icon-line {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.icon-line .mini-icon {
+  margin-top: 1px;
+}
+
+.schedule li {
+  align-items: center;
+}
+.schedule li .mini-icon {
+  color: var(--muted);
+  margin-left: -6px;
+}
+
+.pack-icon {
+  display: inline-flex;
+  color: var(--muted);
 }

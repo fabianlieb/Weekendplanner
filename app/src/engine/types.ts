@@ -294,9 +294,27 @@ export interface ConditionFacts {
   lightTime?: Minutes;
 }
 
+export type ScheduleKind =
+  | 'depart'
+  | 'home'
+  | 'lift'
+  | 'ski'
+  | 'last_run'
+  | 'ascent'
+  | 'trail'
+  | 'summit'
+  | 'descent'
+  | 'end'
+  | 'spot'
+  | 'light_morning'
+  | 'light_evening'
+  | 'photo';
+
 export interface ScheduleItem {
   time: Minutes;
   label: string;
+  /** What happens (for a symbol); missing in plans stored before it existed. */
+  kind?: ScheduleKind;
 }
 
 export type RiskStatus =

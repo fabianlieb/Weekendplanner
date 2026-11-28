@@ -51,20 +51,45 @@ export function summaryText(summary: Partial<Record<ExclusionReason, number>> | 
 
 const signed = (n: number) => (n < 0 ? `−${Math.abs(n)}` : String(n));
 
-/** «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee · Nebelmeer wahrscheinlich» */
-export function weatherLine(w: WeatherSummary, activity: Activity, slot: Slot): string {
-  const parts = [`${signed(w.temperature)} °C`, `Böen ${w.maxGust} km/h`];
+export interface WeatherPart {
+  icon: 'temp' | 'wind' | 'sun' | 'cloud' | 'snow' | 'moon' | 'rain' | 'fog';
+  /** Short text next to the symbol, e.g. «25 km/h». */
+  short: string;
+  /** Full text, e.g. «Böen 25 km/h» (sharing, calendar, screen readers). */
+  text: string;
+}
+
+/** Weather in parts: symbol + short value on screen, full text for sharing. */
+export function weatherParts(w: WeatherSummary, activity: Activity, slot: Slot): WeatherPart[] {
+  const t = `${signed(w.temperature)} °C`;
+  const parts: WeatherPart[] = [
+    { icon: 'temp', short: t, text: t },
+    { icon: 'wind', short: `${w.maxGust} km/h`, text: `Böen ${w.maxGust} km/h` },
+  ];
   if (slot === 'day' && activity !== 'photo' && w.sunshineHours !== undefined) {
     const h = Math.round(w.sunshineHours);
-    parts.push(h === 0 ? 'kaum Sonne' : `${h} h Sonne`);
+    parts.push(h === 0 ? { icon: 'cloud', short: 'kaum Sonne', text: 'kaum Sonne' } : { icon: 'sun', short: `${h} h`, text: `${h} h Sonne` });
   } else {
-    parts.push(`Bewölkung ${w.cloudCover} %`);
+    parts.push({ icon: 'cloud', short: `${w.cloudCover} %`, text: `Bewölkung ${w.cloudCover} %` });
   }
-  if (activity !== 'photo' && w.newSnowCm >= 1) parts.push(`${w.newSnowCm} cm Neuschnee`);
-  if (w.moonIllumination !== undefined) parts.push(`Mond ${Math.round(w.moonIllumination * 100)} %`);
-  if (w.precipitationMm >= 1) parts.push(`${String(w.precipitationMm).replace('.', ',')} mm Niederschlag`);
-  if (w.fogSeaLikely) parts.push('Nebelmeer wahrscheinlich');
-  return parts.join(' · ');
+  if (activity !== 'photo' && w.newSnowCm >= 1) parts.push({ icon: 'snow', short: `${w.newSnowCm} cm`, text: `${w.newSnowCm} cm Neuschnee` });
+  if (w.moonIllumination !== undefined) {
+    const m = Math.round(w.moonIllumination * 100);
+    parts.push({ icon: 'moon', short: `${m} %`, text: `Mond ${m} %` });
+  }
+  if (w.precipitationMm >= 1) {
+    const mm = String(w.precipitationMm).replace('.', ',');
+    parts.push({ icon: 'rain', short: `${mm} mm`, text: `${mm} mm Niederschlag` });
+  }
+  if (w.fogSeaLikely) parts.push({ icon: 'fog', short: 'Nebelmeer', text: 'Nebelmeer wahrscheinlich' });
+  return parts;
+}
+
+/** «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee · Nebelmeer wahrscheinlich» */
+export function weatherLine(w: WeatherSummary, activity: Activity, slot: Slot): string {
+  return weatherParts(w, activity, slot)
+    .map((p) => p.text)
+    .join(' · ');
 }
 
 export function signedTemp(n: number): string {

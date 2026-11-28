@@ -2,11 +2,12 @@ import type { PlanB, RiskInfo, Suggestion } from '../../engine/types';
 import { formatTime } from '../../engine/util';
 import { DAY_LABEL, DAY_SHORT } from '../../engine/texts';
 import { RiskBadge } from '../components';
-import { formatDuration, weatherLine } from '../format';
+import { formatDuration } from '../format';
 import { navigate } from '../router';
 import { SportIcon } from '../icons';
 import { Thumb, usePlaceMedia } from '../media';
 import { hasTrack } from '../../data/tracks';
+import { WeatherChips } from '../WeatherChips';
 
 function riskShort(r: RiskInfo): string | undefined {
   if (!r.applies) return undefined;
@@ -58,7 +59,7 @@ export function SuggestionCard({
         </span>
         <Thumb image={image} />
       </span>
-      {s.weather && <span className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</span>}
+      {s.weather && <WeatherChips w={s.weather} activity={s.activity} slot={s.slot} />}
       <span className="card-text">{reason ? `Statt ${insteadOf}, ${reason}.` : s.reasons.join(' ')}</span>
       <span className="card-meta">
         {meta.join(' · ')}

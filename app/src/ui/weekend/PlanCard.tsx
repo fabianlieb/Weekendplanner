@@ -4,13 +4,15 @@ import type { Candidate, PlanB, Suggestion } from '../../engine/types';
 import { CHECK_HOLDS, CHECK_NAME } from '../../engine/texts';
 import { addDays, formatTime } from '../../engine/util';
 import { RiskBadge } from '../components';
-import { dayWithDate, weatherLine } from '../format';
+import { dayWithDate } from '../format';
 import { googleMapsUrl, navigationTarget } from '../geo';
 import { NavigateIcon, SportIcon } from '../icons';
 import { CalendarButton } from './CalendarButton';
 import { Thumb, usePlaceMedia } from '../media';
 import { ShareButton } from './ShareButton';
 import { navigate } from '../router';
+import { WeatherChips } from '../WeatherChips';
+import { MiniIcon } from '../miniIcons';
 
 /** From this hour on the day before, the evening check is the main action. */
 const CHECK_FROM_HOUR = 16;
@@ -58,9 +60,10 @@ export function PlanCard({
         </span>
         <Thumb image={image} size={72} />
       </button>
-      {chosen.weather && <span className="card-weather">{weatherLine(chosen.weather, chosen.activity, chosen.slot)}</span>}
+      {chosen.weather && <WeatherChips w={chosen.weather} activity={chosen.activity} slot={chosen.slot} />}
       {departure && back && (
-        <span className="small">
+        <span className="small icon-line">
+          <MiniIcon name={chosen.travel.mode === 'transit' ? 'train' : 'car'} />
           <strong>Abfahrt {formatTime(departure.time)}</strong> ab {chosen.travel.startPointName} · zurück {formatTime(back.time)}
         </span>
       )}

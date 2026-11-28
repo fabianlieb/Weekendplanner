@@ -11,13 +11,15 @@ import { RouteSection } from './RouteSection';
 import { publicGpxUrl } from '../../data/tracks';
 import { PlacePicture } from '../media';
 import { ShareButton } from './ShareButton';
-import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } from '../format';
+import { dayWithDate, formatClock, formatDuration, signedTemp } from '../format';
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
 import { navigate } from '../router';
 import { RiskBlock } from './RiskBlock';
 import { SLF_URL } from '../../data/snow';
 import { shortDate } from '../../engine/texts';
 import { TransitSection } from './TransitSection';
+import { WeatherChips, scheduleIcon } from '../WeatherChips';
+import { MiniIcon, packingIcon } from '../miniIcons';
 
 export function DetailView({ id }: { id: string | undefined }) {
   const db = getDb();
@@ -82,10 +84,11 @@ export function DetailView({ id }: { id: string | undefined }) {
       <RiskBlock risk={s.risk} />
 
       <div className="stack-sm">
-        {s.weather && <strong className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</strong>}
+        {s.weather && <WeatherChips w={s.weather} activity={s.activity} slot={s.slot} large />}
         <span className="small">{s.reasons.join(' ')}</span>
         {s.snow && (
-          <span className="tiny muted">
+          <span className="tiny muted icon-line">
+            <MiniIcon name="snow" size={14} />
             Schnee gemessen: {s.snow.depthCm} cm, Neuschnee 3 Tage {s.snow.newSnow3dCm} cm · Station {s.snow.station} {s.snow.elevation} m ({s.snow.distanceKm} km) ·{' '}
             {shortDate(s.snow.date)} ·{' '}
             <a href={SLF_URL} target="_blank" rel="noreferrer">
@@ -100,6 +103,7 @@ export function DetailView({ id }: { id: string | undefined }) {
           {s.schedule.map((i) => (
             <li key={`${i.time}-${i.label}`}>
               <span className="time">{formatTime(i.time)}</span>
+              <MiniIcon name={scheduleIcon(i, s.travel.mode)} />
               <span>{i.label}</span>
             </li>
           ))}
@@ -148,6 +152,9 @@ export function DetailView({ id }: { id: string | undefined }) {
           {packing.map((item) => (
             <label key={item} className="check">
               <input type="checkbox" checked={packed.has(item)} onChange={() => void togglePacked(item)} />
+              <span className={`pack-icon${packed.has(item) ? ' muted' : ''}`}>
+                <MiniIcon name={packingIcon(item)} />
+              </span>
               <span className={packed.has(item) ? 'muted' : ''}>{item}</span>
             </label>
           ))}
