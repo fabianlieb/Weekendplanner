@@ -235,6 +235,23 @@ h2 {
   align-self: flex-start;
 }
 
+/* Secondary action as underlined text, still a full touch target */
+.link-quiet {
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: var(--touch);
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
 /* Choice group: one row of toggle buttons (aria-pressed) */
 .choice {
   display: flex;

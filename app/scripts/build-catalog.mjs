@@ -6,9 +6,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { LAYERS, astraTrailToEntry, endpoints, sacRouteToEntry } from './catalog-lib.mjs';
+import { LAYERS, astraTrailToEntry, encodePolyline, endpoints, gpxFileName, routeLinesFrom, sacRouteToEntry } from './catalog-lib.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'catalog', 'routes.json');
+// Not in public/: only the GPX files generated from it are published (see build-gpx.mjs).
+const LINES_OUT = join(dirname(fileURLToPath(import.meta.url)), 'route-lines.json');
 const API = 'https://api3.geo.admin.ch/rest/services';
 // Switzerland incl. border areas (LV95)
 const BBOX = [2480000, 1070000, 2840000, 1300000];
@@ -112,6 +114,8 @@ async function mapLimit(items, limit, fn) {
 }
 
 const entries = [];
+/** Route geometry per entry id, for the published GPX files. */
+const routeGeometry = new Map();
 for (const [layer, kind] of [
   [LAYERS.skiTours, 'ski_tour'],
   [LAYERS.sacSnowshoe, 'snowshoe'],
@@ -124,6 +128,7 @@ for (const [layer, kind] of [
   features.forEach((f, i) => {
     const e = sacRouteToEntry(f, kind, heights[i]);
     if (e) entries.push(e);
+    if (e) routeGeometry.set(e.id, f.geometry);
   });
 }
 {
@@ -135,6 +140,7 @@ for (const [layer, kind] of [
   features.forEach((f, i) => {
     const e = astraTrailToEntry(f, heights[i]);
     if (e) entries.push(e);
+    if (e) routeGeometry.set(e.id, f.geometry);
   });
 }
 
@@ -160,5 +166,16 @@ writeFileSync(
     entries: unique,
   }),
 );
+// Route lines (compact) for the GPX files published with the app (scripts/build-gpx.mjs).
+const routes = {};
+for (const e of unique) {
+  const g = routeGeometry.get(e.id);
+  if (!e.track || !g) continue;
+  const ls = routeLinesFrom(g, e.valley);
+  if (ls.length) routes[gpxFileName(e.track)] = { n: e.name, s: e.source, l: ls.map(encodePolyline) };
+}
+writeFileSync(LINES_OUT, JSON.stringify({ generatedAt: new Date().toISOString().slice(0, 10), routes }));
+console.log(`${Object.keys(routes).length} Routenlinien → ${LINES_OUT}`);
+
 const counts = unique.reduce((m, e) => ((m[e.source + ' ' + e.kind] = (m[e.source + ' ' + e.kind] ?? 0) + 1), m), {});
 console.log(`${unique.length} Einträge → ${OUT}`, counts);

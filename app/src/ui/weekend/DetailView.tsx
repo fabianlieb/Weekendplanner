@@ -8,6 +8,7 @@ import { PageHead, Section, showToast, useAsync } from '../components';
 import { NavigateIcon, SportIcon } from '../icons';
 import { CalendarButton } from './CalendarButton';
 import { RouteSection } from './RouteSection';
+import { publicGpxUrl } from '../../data/tracks';
 import { PlacePicture } from '../media';
 import { ShareButton } from './ShareButton';
 import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } from '../format';
@@ -150,7 +151,7 @@ export function DetailView({ id }: { id: string | undefined }) {
         {candidate?.difficulty && <span className="small">Schwierigkeit: {candidate.difficulty}</span>}
         {s.priceChf !== undefined && <span className="small">Tageskarte CHF {s.priceChf}</span>}
         <div className="row-wrap">
-          {candidate && (
+          {candidate && !publicGpxUrl(candidate) && (
             <a className="btn" href={swisstopoUrl(candidate.summit)} target="_blank" rel="noreferrer">
               Karte (swisstopo)
             </a>

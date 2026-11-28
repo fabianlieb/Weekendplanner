@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error plain JS module shared with the catalogue build script
-import { astraTrailToEntry, lv95ToWgs84, parseHours, sacRouteToEntry, totalHours } from '../../scripts/catalog-lib.mjs';
+import { astraTrailToEntry, decodePolyline, encodePolyline, gpxDocument, lv95ToWgs84, parseHours, routeLinesFrom, sacRouteToEntry, totalHours } from '../../scripts/catalog-lib.mjs';
+import { parseGpx } from './tracks';
 
 const skiFeature = {
   id: '{008e0435-2eab-4612-bcea-db20103b6f10}',
@@ -73,5 +74,33 @@ describe('there-and-back routes', () => {
     const loop = { ...skiFeature, geometry: { type: 'LineString', coordinates: [[2700000, 1210000], [2703000, 1213000], [2700050, 1210050]] } };
     const e = conv(loop, 'ski_tour', 1000);
     expect(e.summit.lat).not.toBeCloseTo(e.valley.lat, 3);
+  });
+});
+
+describe('published GPX files', () => {
+  it('stores lines compactly without losing more than ~1 m', () => {
+    const pts = [
+      [46.12345, 9.54321],
+      [46.12399, 9.54001],
+      [45.99999, 10.00001],
+    ];
+    expect(encodePolyline([[38.5, -120.2], [40.7, -120.95], [43.252, -126.453]])).toBe('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+    expect(decodePolyline(encodePolyline(pts))).toEqual(pts);
+  });
+
+  it('lets the route run away from the start point', () => {
+    const geometry = { type: 'LineString', coordinates: [[2601000, 1201000], [2600500, 1200500], [2600000, 1200000]] };
+    const start = lv95ToWgs84(2600000, 1200000);
+    const ls = routeLinesFrom(geometry, start);
+    expect(ls[0][0]).toEqual([start.lat, start.lon]);
+    const multi = { type: 'MultiLineString', coordinates: [[[2600000, 1200000], [2600500, 1200500]], [[2600500, 1200500], [2601000, 1201000]]] };
+    expect(routeLinesFrom(multi, start)[0][0]).toEqual([start.lat, start.lon]);
+  });
+
+  it('writes a GPX the app can read back, with credit and escaped name', () => {
+    const xml = gpxDocument('Piz & Co', '© swisstopo / SAC', [[[46.1, 9.1], [46.2, 9.2]]]);
+    expect(xml).toContain('<name>Piz &amp; Co</name>');
+    expect(xml).toContain('copyright author="© swisstopo / SAC"');
+    expect(parseGpx(xml)).toEqual([[[46.1, 9.1], [46.2, 9.2]]]);
   });
 });

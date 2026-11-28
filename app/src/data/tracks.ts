@@ -100,3 +100,37 @@ export async function loadTrack(db: PlannerDB, c: Candidate, now: Date = new Dat
     return hit?.track;
   }
 }
+
+// ---------- Open the route in a map app ----------
+// Both apps load the GPX from a public URL. The GPX files of all catalogue routes are published
+// with the app (scripts/build-gpx.mjs → catalog/gpx/). Own GPX files have no public URL.
+
+/** File name of the published GPX. Same rule as gpxFileName in scripts/catalog-lib.mjs. */
+export function gpxFileName(track: NonNullable<Candidate['track']>): string {
+  return `${track.layer.split('.').pop() ?? 'route'}-${track.featureId.replace(/[^A-Za-z0-9-]/g, '')}.gpx`;
+}
+
+function appBase(): string {
+  const base = (import.meta.env?.BASE_URL as string | undefined) ?? '/';
+  return new URL(base, typeof location === 'undefined' ? 'https://localhost/' : location.origin).href;
+}
+
+/** Public URL of the route's GPX, only for catalogue route lines (not for an own GPX). */
+export function publicGpxUrl(c: Pick<Candidate, 'gpx' | 'track'> | undefined, base: string = appBase()): string | undefined {
+  if (!c?.track || c.gpx) return undefined;
+  return new URL(`catalog/gpx/${gpxFileName(c.track)}`, base).href;
+}
+
+/**
+ * Route link of the swisstopo app (opens the app on the iPhone, else its web page):
+ * https://swisstopo.app/u/<GPX URL, Base64 without padding>. A URL without «?», «>» or «~»
+ * gives Base64 without «+» and «/», so the link needs no further escaping.
+ */
+export function swisstopoAppUrl(gpxUrl: string): string {
+  return `https://swisstopo.app/u/${btoa(gpxUrl).replace(/=+$/, '')}`;
+}
+
+/** Guru Maps imports a file from a URL: guru://open?url=… */
+export function guruMapsUrl(gpxUrl: string): string {
+  return `guru://open?url=${gpxUrl}`;
+}

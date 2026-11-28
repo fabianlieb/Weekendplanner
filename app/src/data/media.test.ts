@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fetchPlaceImage, nameKeys, normalize, pickPage } from './placeImages';
-import { buildGpx, fetchCatalogTrack, hasTrack, parseGpx, thin } from './tracks';
+import { readFileSync } from 'node:fs';
+import { buildGpx, fetchCatalogTrack, gpxFileName, guruMapsUrl, hasTrack, parseGpx, publicGpxUrl, swisstopoAppUrl, thin } from './tracks';
+// @ts-expect-error plain JS module shared with the catalogue build script
+import { gpxFileName as libGpxFileName } from '../../scripts/catalog-lib.mjs';
 
 describe('place pictures', () => {
   it('derives name keys without generic words', () => {
@@ -76,5 +79,36 @@ describe('GPS tracks', () => {
     expect(t?.lines[0]?.[0]?.[0]).toBeCloseTo(46.951, 3);
     expect(t?.source).toBe('swisstopo/SAC');
     expect(hasTrack({ gpx: undefined, track: undefined })).toBe(false);
+  });
+});
+
+describe('open a route in a map app', () => {
+  const track = { layer: 'ch.swisstopo-karto.skitouren', featureId: '{0014bf39-d511-496c-a778-33b9bfb62510}' };
+  const base = 'https://fabianlieb.github.io/Weekendplanner/';
+
+  it('uses the same GPX file name as the build script', () => {
+    expect(gpxFileName(track)).toBe('skitouren-0014bf39-d511-496c-a778-33b9bfb62510.gpx');
+    expect(gpxFileName(track)).toBe(libGpxFileName(track));
+    const astra = { layer: 'ch.astra.schneeschuhwanderwege', featureId: '818' };
+    expect(gpxFileName(astra)).toBe(libGpxFileName(astra));
+  });
+
+  it('has a public GPX only for catalogue route lines', () => {
+    expect(publicGpxUrl({ track }, base)).toBe(`${base}catalog/gpx/skitouren-0014bf39-d511-496c-a778-33b9bfb62510.gpx`);
+    expect(publicGpxUrl({ track, gpx: '<gpx/>' }, base)).toBeUndefined();
+    expect(publicGpxUrl({}, base)).toBeUndefined();
+    expect(publicGpxUrl(undefined, base)).toBeUndefined();
+  });
+
+  it('builds the swisstopo route link like the swisstopo instructions', () => {
+    expect(swisstopoAppUrl('https://cms.geo.admin.ch/fmc/Riederhorn.gpx')).toBe('https://swisstopo.app/u/aHR0cHM6Ly9jbXMuZ2VvLmFkbWluLmNoL2ZtYy9SaWVkZXJob3JuLmdweA');
+    expect(guruMapsUrl('https://x.example/a.gpx')).toBe('guru://open?url=https://x.example/a.gpx');
+  });
+
+  it('gives a link without + or / for every catalogue route', () => {
+    const entries = (JSON.parse(readFileSync('public/catalog/routes.json', 'utf8')) as { entries: { track?: typeof track }[] }).entries;
+    const bad = entries.filter((e) => e.track && /[+/]/.test(swisstopoAppUrl(publicGpxUrl(e, base)!).slice('https://swisstopo.app/u/'.length)));
+    expect(entries.filter((e) => e.track).length).toBeGreaterThan(3000);
+    expect(bad).toEqual([]);
   });
 });

@@ -135,3 +135,93 @@ export function astraTrailToEntry(feature, startHeight) {
     track: { layer: LAYERS.astraSnowshoe, featureId: String(feature.id ?? feature.featureId) },
   };
 }
+
+// ---------- Published GPX files (opened by the swisstopo app / Guru Maps from a public URL) ----------
+
+/** File name of the published GPX of a route line, served at catalog/gpx/<name>. Same rule in src/data/tracks.ts. */
+export function gpxFileName(track) {
+  return `${track.layer.split('.').pop()}-${String(track.featureId).replace(/[^A-Za-z0-9-]/g, '')}.gpx`;
+}
+
+/** Route line as WGS84 [lat, lon] lines (~1 m), running away from the start point. */
+export function routeLinesFrom(geometry, start) {
+  const ls = lines(geometry)
+    .filter((l) => l.length > 1)
+    .map((l) =>
+      l.map(([e, n]) => {
+        const p = lv95ToWgs84(e, n);
+        return [p.lat, p.lon];
+      }),
+    );
+  if (!ls.length || !start) return ls;
+  const d = (p) => (p[0] - start.lat) ** 2 + ((p[1] - start.lon) * 0.68) ** 2;
+  const first = ls[0][0];
+  const lastLine = ls[ls.length - 1];
+  return d(lastLine[lastLine.length - 1]) < d(first) ? ls.reverse().map((l) => [...l].reverse()) : ls;
+}
+
+/** Encoded polyline (precision 1e-5), compact storage of a line. */
+export function encodePolyline(points) {
+  const enc = (v) => {
+    let s = v < 0 ? ~(v << 1) : v << 1;
+    let r = '';
+    while (s >= 0x20) {
+      r += String.fromCharCode((0x20 | (s & 0x1f)) + 63);
+      s >>= 5;
+    }
+    return r + String.fromCharCode(s + 63);
+  };
+  let out = '';
+  let pLat = 0;
+  let pLon = 0;
+  for (const [lat, lon] of points) {
+    const a = Math.round(lat * 1e5);
+    const b = Math.round(lon * 1e5);
+    out += enc(a - pLat) + enc(b - pLon);
+    pLat = a;
+    pLon = b;
+  }
+  return out;
+}
+
+export function decodePolyline(str) {
+  const out = [];
+  let i = 0;
+  let lat = 0;
+  let lon = 0;
+  const next = () => {
+    let shift = 0;
+    let result = 0;
+    let b;
+    do {
+      b = str.charCodeAt(i++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    return result & 1 ? ~(result >> 1) : result >> 1;
+  };
+  while (i < str.length) {
+    lat += next();
+    lon += next();
+    out.push([lat / 1e5, lon / 1e5]);
+  }
+  return out;
+}
+
+const xmlEsc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** GPX 1.1 document of a catalogue route line. */
+export function gpxDocument(name, source, routeLines) {
+  const segs = routeLines
+    .map((l) => `    <trkseg>\n${l.map(([lat, lon]) => `      <trkpt lat="${lat.toFixed(5)}" lon="${lon.toFixed(5)}"/>`).join('\n')}\n    </trkseg>`)
+    .join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Wochenend-Planer" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata><name>${xmlEsc(name)}</name><copyright author="${xmlEsc(source)}"/></metadata>
+  <trk>
+    <name>${xmlEsc(name)}</name>
+${segs}
+  </trk>
+</gpx>
+`;
+}
