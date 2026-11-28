@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { getDb } from '../data/db';
 import { hasProfile } from '../data/repositories';
 import { BackupScreen } from './admin/BackupScreen';
@@ -8,7 +8,7 @@ import { CatalogDetail } from './admin/CatalogDetail';
 import { ProfileScreen } from './admin/ProfileScreen';
 import { TravelTable } from './admin/TravelTable';
 import { Attribution, Notice, Toast } from './components';
-import { ListIcon, ProfileIcon, WeekendIcon } from './icons';
+import { ListIcon, MapIcon, ProfileIcon, WeekendIcon } from './icons';
 import { navigate, useRoute, type View } from './router';
 import { CheckView } from './weekend/CheckView';
 import { DetailView } from './weekend/DetailView';
@@ -17,8 +17,12 @@ import { FeedbackView } from './weekend/FeedbackView';
 import { StatsView } from './weekend/StatsView';
 import { WeekendView } from './weekend/WeekendView';
 
+// The map (with Leaflet) is loaded only when opened.
+const MapView = lazy(() => import('./map/MapView').then((m) => ({ default: m.MapView })));
+
 const TABS: { view: View; label: string; icon: ReactNode; matches: View[] }[] = [
   { view: 'thursday', label: 'Wochenende', icon: <WeekendIcon />, matches: ['thursday', 'suggestions', 'detail', 'check', 'feedback'] },
+  { view: 'map', label: 'Karte', icon: <MapIcon />, matches: ['map'] },
   { view: 'list', label: 'Liste', icon: <ListIcon />, matches: ['list'] },
   { view: 'profile', label: 'Profil', icon: <ProfileIcon />, matches: ['profile', 'backup', 'stats'] },
 ];
@@ -61,6 +65,13 @@ export function App() {
         ) : (
           <CandidatesScreen welcome={p.welcome === '1'} src={p.src === 'catalog' ? 'catalog' : 'own'} />
         );
+      break;
+    case 'map':
+      content = (
+        <Suspense fallback={<span className="small muted">Karte wird geladen …</span>}>
+          <MapView />
+        </Suspense>
+      );
       break;
     case 'profile':
       content = <ProfileScreen welcome={p.welcome === '1'} />;

@@ -182,6 +182,10 @@ In der Liste markiert der **Stern** einen Ort für die Merkliste. Bei jeder Aktu
 
 Am Sonntagabend bewertest du jeden der 3 Vorschläge mit «Passt» oder «Passt nicht», dazu umgesetzt ja/nein und die Strenge. Die Auswertung (Profil → Auswertung) zeigt Umsetzungsrate, Ø passende Vorschläge und die Trefferquote pro Sportart.
 
+### Karte
+
+Der Tab **Karte** zeigt die Vorschläge (1–3), Plan B (B), deinen gewählten Plan, gemerkte Orte aus dem Spot-Radar (Kreis) und den Startpunkt (Quadrat) auf der **swisstopo-Winterkarte**, mit den GPS-Tracks der Vorschläge. Oben rechts lassen sich Landeskarte, **Skirouten**, **Schneeschuhrouten**, **Wildruhezonen** und **Jagdbanngebiete** (BAFU) einblenden. Antippen eines Punkts öffnet Name, Tag, Anreise und «Detailplan». Die Karte braucht Internet; die Kartenbibliothek [Leaflet](https://leafletjs.com) wird erst geladen, wenn du den Tab öffnest.
+
 ### Gemessene Schneehöhe
 
 Zweimal täglich (ca. 05:20 und 16:20) holt der Deploy-Workflow die Schneehöhen der SLF-Messstationen (IMIS, Versuchsfelder) und legt sie als `data/snow.json` zur App (die SLF-Schnittstelle erlaubt keinen direkten Abruf aus dem Browser). Für jeden Ort nimmt die App die nächste Station im Höhenband der Route (12 km, Start − 200 m bis Gipfel + 300 m, höchstens 2 Tage alt). Der Detailplan zeigt dann z. B. «Schnee gemessen: 51 cm, Neuschnee 3 Tage 0 cm · Station Wanne 1701 m (8 km)». Liegt bei einer **Skitour weniger als 40 cm** bzw. bei einem **Schneeschuh-Trail weniger als 30 cm**, wird der Ort nicht vorgeschlagen («zu wenig Schnee»). Ohne Station in der Nähe oder ohne Daten ändert sich nichts. Für den Dev-Server: `node scripts/build-snow.mjs --public`.

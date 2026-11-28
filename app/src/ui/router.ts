@@ -1,8 +1,8 @@
 // Minimal URL-based routing via `?view=` (also the deep links for the Shortcuts automation).
 import { useEffect, useState } from 'react';
 
-export type View = 'thursday' | 'suggestions' | 'detail' | 'check' | 'feedback' | 'stats' | 'list' | 'profile' | 'backup' | 'shared' | 'admin';
-const VIEWS: View[] = ['thursday', 'suggestions', 'detail', 'check', 'feedback', 'stats', 'list', 'profile', 'backup', 'shared', 'admin'];
+export type View = 'thursday' | 'suggestions' | 'detail' | 'check' | 'feedback' | 'stats' | 'list' | 'map' | 'profile' | 'backup' | 'shared' | 'admin';
+const VIEWS: View[] = ['thursday', 'suggestions', 'detail', 'check', 'feedback', 'stats', 'list', 'map', 'profile', 'backup', 'shared', 'admin'];
 
 export interface Route {
   view: View;

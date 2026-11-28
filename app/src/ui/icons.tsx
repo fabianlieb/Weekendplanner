@@ -39,6 +39,15 @@ export function ListIcon({ size = 22 }: { size?: number }) {
   );
 }
 
+export function MapIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20z" />
+      <path d="M9 4v13.5M15 6.5V20" />
+    </svg>
+  );
+}
+
 export function ProfileIcon({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" {...base}>

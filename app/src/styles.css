@@ -500,7 +500,7 @@ textarea.input {
   max-width: 560px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .tabbar button {
@@ -1122,4 +1122,69 @@ img.thumb {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* --- Map ------------------------------------------------------------------ */
+.map-view {
+  height: calc(100dvh - var(--nav-h) - env(safe-area-inset-bottom) - 230px);
+  min-height: 320px;
+  border: 1px solid var(--ink);
+  margin: 0 calc(-1 * var(--gutter));
+  z-index: 0;
+}
+
+.leaflet-marker-icon.map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font: 700 14px/1 Inter, system-ui, sans-serif;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.leaflet-marker-icon.map-pin-suggestion {
+  background: var(--accent);
+  color: var(--bg);
+}
+.leaflet-marker-icon.map-pin-planB {
+  background: var(--ink);
+  color: var(--bg);
+}
+.leaflet-marker-icon.map-pin-chosen {
+  background: var(--bg);
+  color: var(--accent);
+  border: 3px solid var(--accent);
+}
+.leaflet-marker-icon.map-pin-radar {
+  background: var(--bg);
+  border: 3px solid var(--ink);
+  box-shadow: none;
+}
+.leaflet-marker-icon.map-pin-start {
+  background: var(--ink);
+  border-radius: 2px;
+}
+
+.map-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 400 14px/1.35 Inter, system-ui, sans-serif;
+  min-width: 180px;
+}
+.map-popup .btn {
+  margin-top: 6px;
+}
+
+/* Leaflet controls: touch size */
+.leaflet-touch .leaflet-bar a,
+.leaflet-control-layers-toggle {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+.leaflet-control-layers label {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
 }
