@@ -1,19 +1,21 @@
 // Glue between storage, weather and the engine. The screens call these functions.
 
 import { eveningCheck, type CheckResult } from '../engine/eveningCheck';
-import { evaluateOptions, suggest } from '../engine/suggest';
+import { evaluateOptions, suggest, type ScoredOption } from '../engine/suggest';
 import { selectPool } from '../engine/pool';
-import { getCatalog } from './catalog';
+import { getCandidate, getCatalog } from './catalog';
 import { spotRadar } from '../engine/radar';
-import type { Candidate, Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
+import type { Candidate, Exclusion, ExclusionReason, Feedback, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
 import { THRESHOLDS } from '../engine/thresholds';
 import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
-import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, saveWeekendPlan } from './repositories';
+import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, listWeekendPlans, saveWeekendPlan } from './repositories';
+import { learnPreferences, type Preferences } from '../engine/preferences';
 import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './weatherService';
 import { attachRoutedTravel, type RoutingFetch } from './routing';
+import { travelFor, type TravelTime } from '../engine/travel';
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
@@ -101,6 +103,17 @@ async function routedPool(
   const catalog = isCar ? await attachRoutedTravel(db, args.catalog, startPoint, ro) : args.catalog;
   const pool = selectPool({ ...args, own, catalog, startPoint });
   return attachRoutedTravel(db, pool, startPoint, { ...ro, fetchMissing: isCar, date: run.date });
+}
+
+/** Learned preferences: ratings from feedback and the plans chosen on earlier weekends. */
+export async function loadPreferences(db: PlannerDB, feedback: readonly Feedback[], currentWeekend: IsoDate): Promise<Preferences> {
+  const plans = await listWeekendPlans(db);
+  const choices = plans
+    .filter((p) => p.weekend !== currentWeekend)
+    .map((p) => p.chosen ?? (p.chosenId ? findSuggestion(p, p.chosenId) : undefined))
+    .filter((s): s is Suggestion => !!s)
+    .map((s) => ({ candidateId: s.candidateId, activity: s.activity }));
+  return learnPreferences(feedback, choices);
 }
 
 /** Public transport: timetable lookups for the given candidates first (cached afterwards). */
@@ -198,15 +211,16 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
 
   // Public transport: first evaluate with estimates, then look up real connections for the
   // places that can be suggested (best first) and evaluate again.
+  const preferences = await loadPreferences(db, feedback, weekendKey(today));
   const likely =
     startPoint?.mode === 'transit'
-      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback })
+      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences })
           .valid.sort((a, b) => b.total - a.total)
           .map((o) => o.option.candidate.id)
       : [];
   const candidates = await withTransit(db, pool, startPoint, [...new Set(likely)], run);
 
-  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback };
+  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback, preferences };
   const result = suggest(ctx);
   const validIds = new Set(evaluateOptions(ctx).valid.map((o) => o.option.candidate.id));
   const weekend = weekendKey(today);
@@ -295,7 +309,8 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   const candidates = await withTransit(db, pool, startPoint, [chosen.candidateId, ...(plan.planB ? [plan.planB.candidateId] : [])], run);
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
-  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback };
+  const preferences = await loadPreferences(db, feedback, plan.weekend);
+  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences };
   const planB = plan.planB && plan.planB.id !== chosen.id ? plan.planB : undefined;
   const result = eveningCheck(ctx, chosen, planB);
 
@@ -319,4 +334,72 @@ export async function adoptAlternative(db: PlannerDB, weekend: IsoDate, alternat
 
 export function findSuggestion(plan: WeekendPlan, id: string): Suggestion | PlanB | undefined {
   return [...plan.suggestions, ...(plan.planB ? [plan.planB] : []), ...(plan.chosen ? [plan.chosen] : [])].find((s) => s.id === id);
+}
+
+// ---------------------------------------------------------------------------
+// «Warum nicht …?»: why a place is not among this weekend's suggestions
+
+export type WhyNot =
+  | { status: 'no_plan' }
+  | { status: 'not_found' }
+  | { status: 'suggested'; suggestion: Suggestion; planB: boolean }
+  | {
+      status: 'evaluated';
+      candidate: Candidate;
+      /** False if the pre-selection (nearest places per sport) left the place out. */
+      inPool: boolean;
+      valid: ScoredOption[];
+      excluded: Exclusion[];
+      travel?: TravelTime;
+      /** Lowest score among the suggestions (a valid option must beat it). */
+      bar?: number;
+    };
+
+/**
+ * Evaluates one place with the current weekend settings (weather from the cache or fetched now).
+ * Same rules as the suggestions, so the reasons match the engine.
+ */
+export async function explainCandidate(db: PlannerDB, candidateId: string, opts: PlannerOptions = {}): Promise<WhyNot> {
+  const now = opts.now ?? new Date();
+  const today = zurichToday(now);
+  const plan = await currentWeekendPlan(db, now);
+  if (!plan) return { status: 'no_plan' };
+  const hit = plan.suggestions.find((s) => s.candidateId === candidateId) ?? (plan.planB?.candidateId === candidateId ? plan.planB : undefined);
+  if (hit) return { status: 'suggested', suggestion: hit, planB: plan.planB?.id === hit.id };
+
+  const c0 = await getCandidate(db, candidateId, opts.catalog);
+  if (!c0) return { status: 'not_found' };
+  const [savedProfile, own, feedback, catalog] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db), getCatalog(db, opts.catalog)]);
+  const { profile, startPoint } = withTravelMode(withStartPoint(savedProfile, plan.startPoint), plan.input);
+  const run: RoutingRun = { now, date: weekendKey(today), ...(opts.routingFetch ? { routingFetch: opts.routingFetch } : {}) };
+  const [c] = startPoint
+    ? await attachRoutedTravel(db, [c0], startPoint, {
+        now,
+        date: run.date,
+        fetchMissing: true,
+        priority: [c0.id],
+        ...(run.routingFetch ? { fetchFn: run.routingFetch } : {}),
+      })
+    : [c0];
+  const candidate = c ?? c0;
+  const pool = await routedPool(
+    db,
+    { own, catalog, profile, maxTravelHours: plan.input.maxTravelHours, dayForm: plan.input.dayForm, feedback },
+    startPoint,
+    run,
+  );
+  const riskEntries = await new ManualRiskProvider(db).getEntries([candidate.id]);
+  const { weather } = await loadWeather(db, [candidate], { ...opts, now });
+  const preferences = await loadPreferences(db, feedback, plan.weekend);
+  const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences });
+  const scores = [...plan.suggestions].map((s) => s.score);
+  return {
+    status: 'evaluated',
+    candidate,
+    inPool: pool.some((p) => p.id === candidate.id),
+    valid: ev.valid.sort((a, b) => b.total - a.total),
+    excluded: ev.excluded,
+    ...(startPoint ? { travel: travelFor(candidate, startPoint) } : {}),
+    ...(scores.length ? { bar: Math.min(...scores) } : {}),
+  };
 }

@@ -10,7 +10,7 @@ beforeAll(() => {
   vi.stubGlobal('fetch', () => Promise.reject(new Error('no network in tests')));
 });
 import { ManualRiskProvider } from './manualRiskProvider';
-import { HERE, adoptAlternative, chosenSuggestion, computeSuggestions, feedbackWeekend, needsAutoCompute, resolveStartPoint, runEveningCheck, summariseExclusions, weekendKey } from './planner';
+import { HERE, adoptAlternative, chosenSuggestion, computeSuggestions, explainCandidate, feedbackWeekend, loadPreferences, needsAutoCompute, resolveStartPoint, runEveningCheck, summariseExclusions, weekendKey } from './planner';
 import {
   DEFAULT_PROFILE,
   choosePlan,
@@ -169,6 +169,38 @@ describe('planner (storage + weather + engine)', () => {
       expect(s.travel).toMatchObject({ mode: 'transit', source: 'estimate' });
       expect(s.schedule[0]!.time).toBeGreaterThanOrEqual(5 * 60 + 30);
     }
+  });
+
+  it('«Warum nicht …?»: suggested places say so, others get the engine reasons', async () => {
+    await seed();
+    expect((await explainCandidate(db, candidates[0]!.id, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] })).status).toBe('no_plan');
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    const suggested = await explainCandidate(db, plan.suggestions[0]!.candidateId, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    expect(suggested).toMatchObject({ status: 'suggested', planB: false });
+
+    const shown = new Set([...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].map((s) => s.candidateId));
+    const other = candidates.find((c) => !shown.has(c.id))!;
+    const why = await explainCandidate(db, other.id, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    expect(why.status).toBe('evaluated');
+    if (why.status !== 'evaluated') return;
+    // Either excluded with reasons, or valid but below the suggestions / lost to diversity.
+    expect(why.excluded.length + why.valid.length).toBeGreaterThan(0);
+    for (const e of why.excluded) expect(e.reasons.length).toBeGreaterThan(0);
+    expect(why.bar).toBe(Math.min(...plan.suggestions.map((s) => s.score)));
+    expect(await explainCandidate(db, 'unknown', { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] })).toEqual({ status: 'not_found' });
+  });
+
+  it('a plan chosen on an earlier weekend raises that place next time', async () => {
+    await seed();
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    const pick = plan.suggestions[2]!;
+    await db.weekendPlans.put({ ...plan, weekend: '2026-11-28', chosenId: pick.id, chosen: pick });
+    const prefs = await loadPreferences(db, [], '2026-12-05');
+    expect(prefs.candidate[pick.candidateId]).toBeGreaterThan(0);
+    const again = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    const before = plan.suggestions.find((s) => s.candidateId === pick.candidateId);
+    const after = [...again.plan.suggestions, ...(again.plan.planB ? [again.plan.planB] : [])].find((s) => s.candidateId === pick.candidateId && s.date === pick.date);
+    if (before && after) expect(after.score).toBeGreaterThan(before.score);
   });
 
   it('Thursday: computes and stores 3 suggestions + Plan B', async () => {

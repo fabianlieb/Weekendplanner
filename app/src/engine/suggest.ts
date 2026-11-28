@@ -7,10 +7,11 @@ import { bestPhotoAddOn } from './photoAddOn';
 import { buildReasons } from './reasons';
 import { buildRiskInfo, needsAvalancheRating, resolveRisk, riskDecision } from './risk';
 import { buildSchedule } from './schedule';
-import { PLAN_B_REASON, activityLabel } from './texts';
+import { PLAN_B_REASON, REASON, activityLabel } from './texts';
 import { THRESHOLDS } from './thresholds';
 import { levelFor, tooDifficult } from './profile';
 import { computeTiming } from './timing';
+import { preferenceBonus, type Preferences } from './preferences';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
 export { travelFor } from './travel';
@@ -50,6 +51,15 @@ export interface EngineContext {
   astro?: AstroFn;
   /** Restrict to these dates (used by the evening check). */
   onlyDates?: readonly IsoDate[];
+  /** Learned from chosen plans and ratings (score bonus). */
+  preferences?: Preferences;
+}
+
+/** Adds «passt zu deinen bisherigen Wahlen» to the reasons when the learned bonus is noticeable. */
+function withLearned(reasons: string[], learned: number): string[] {
+  if (learned < THRESHOLDS.learning.reasonFrom) return reasons;
+  const text = REASON.learnedLike.charAt(0).toUpperCase() + REASON.learnedLike.slice(1) + '.';
+  return [...reasons, text];
 }
 
 // ---------------------------------------------------------------------------
@@ -204,7 +214,8 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
         const ws = w ? weatherSummary({ candidate: c, weather: w, date, window: timing.window, slot, astro: astroSummit }) : undefined;
         const fit = fitScore(c, cap, input.dayForm);
         const riskPenalty = risk.color ? THRESHOLDS.scoring.riskPenalty[risk.color] : 0;
-        const total = THRESHOLDS.scoring.conditionWeight * cond.score + THRESHOLDS.scoring.fitWeight * fit - riskPenalty;
+        const learned = preferenceBonus(ctx.preferences, c.id, activity);
+        const total = THRESHOLDS.scoring.conditionWeight * cond.score + THRESHOLDS.scoring.fitWeight * fit - riskPenalty + learned;
 
         const suggestion: Suggestion = {
           id: `${c.id}:${date}:${slot}`,
@@ -220,7 +231,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
           conditionScore: Math.round(cond.score),
           fitScore: Math.round(fit),
           sub: Object.fromEntries(Object.entries(cond.sub).map(([k, v]) => [k, Math.round(v)])),
-          reasons: buildReasons({ sub: cond.sub, facts: cond.facts, risk, ...(photo ? { photo } : {}), isPhotoActivity: activity === 'photo' }),
+          reasons: withLearned(buildReasons({ sub: cond.sub, facts: cond.facts, risk, ...(photo ? { photo } : {}), isPhotoActivity: activity === 'photo' }), learned),
           schedule: buildSchedule({ option, timing: { ...timing, departure, activityStart }, startPointName: startPoint.name, astro: activity === 'photo' ? astroSummit : astroValley, ...(photo ? { photo } : {}), back }),
           travel: { ...travel, startPointName: startPoint.name },
           ...(photo ? { photo } : {}),

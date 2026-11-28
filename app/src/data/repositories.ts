@@ -151,6 +151,10 @@ export async function getWeekendPlan(db: PlannerDB, weekend: IsoDate): Promise<W
   return db.weekendPlans.get(weekend);
 }
 
+export async function listWeekendPlans(db: PlannerDB): Promise<WeekendPlan[]> {
+  return db.weekendPlans.orderBy('weekend').toArray();
+}
+
 export async function latestWeekendPlan(db: PlannerDB): Promise<WeekendPlan | undefined> {
   return db.weekendPlans.orderBy('weekend').last();
 }

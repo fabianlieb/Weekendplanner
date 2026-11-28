@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { WhyNotSection } from './WhyNotSection';
 import { Errors, validateCandidate } from '../../data/backup';
 import { getDb } from '../../data/db';
 import { deleteCandidate, getProfile, listCandidates, newId, saveCandidate } from '../../data/repositories';
@@ -180,6 +181,8 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
         <span className="overline">{isNew ? 'Neuer Eintrag' : KIND_LABEL[d.kind]}</span>
         <h1>{d.name || 'Ohne Namen'}</h1>
       </header>
+
+      {!isNew && <WhyNotSection candidateId={d.id} />}
 
       <Section title="Grunddaten">
         <Choice<CandidateKind> label="Typ" wrap options={KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))} value={d.kind} onChange={(k) => set({ kind: k })} />

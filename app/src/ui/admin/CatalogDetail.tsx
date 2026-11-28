@@ -1,5 +1,7 @@
 // One catalogue entry: facts, links, and the user's markings. «In eigene Liste übernehmen»
 // copies it into the own list (to add travel times, parking, packing extras).
+import { RouteSection } from '../weekend/RouteSection';
+import { WhyNotSection } from './WhyNotSection';
 import { CATALOG_ATTRIBUTION, copyToOwn, getCandidate, setCatalogState } from '../../data/catalog';
 import { getDb } from '../../data/db';
 import { getProfile, newId, saveCandidate } from '../../data/repositories';
@@ -68,6 +70,10 @@ export function CatalogDetail({ id }: { id: string }) {
           </a>
         </div>
       </Section>
+
+      <RouteSection candidate={c} />
+
+      <WhyNotSection candidateId={c.id} />
 
       <Section title="Für dich">
         <div className="row-wrap">

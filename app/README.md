@@ -180,6 +180,14 @@ In der Liste markiert der **Stern** einen Ort für die Merkliste. Bei jeder Aktu
 
 Am Sonntagabend bewertest du jeden der 3 Vorschläge mit «Passt» oder «Passt nicht», dazu umgesetzt ja/nein und die Strenge. Die Auswertung (Profil → Auswertung) zeigt Umsetzungsrate, Ø passende Vorschläge und die Trefferquote pro Sportart.
 
+### Die App lernt mit
+
+Was du an früheren Wochenenden mit **«Plan wählen»** gewählt hast (zählt doppelt) und wie du Vorschläge bewertet hast, gibt kleine Zusatzpunkte: pro Sportart höchstens ±8 (erst ab 3 Signalen), pro Ort +2 je Wahl bzw. +3 je «Passt» (max. +6) und −6 je «Passt nicht» (max. −12). Sicherheitsregeln und Filter bleiben davon unberührt; es ändert nur die Reihenfolge. Ab +3 steht beim Vorschlag «Passt zu deinen bisherigen Wahlen».
+
+### Warum nicht …?
+
+In der Liste (Katalog-Ort oder eigener Eintrag) prüft **«Warum nicht vorgeschlagen?»** den Ort mit den Einstellungen dieses Wochenendes und nennt pro Tag die Gründe (z. B. «keine Skitourenguru-Farbe von heute, Anreise zu lang») – oder, falls er möglich wäre, seine Punktzahl im Vergleich zu den Vorschlägen. Katalog-Orte zeigen dort auch ihren GPS-Track mit den Knöpfen swisstopo und Guru Maps.
+
 ### Navigation und Parkplatz
 
 «Navigation (Google Maps)» im Detailplan führt zum **Parkplatz**, falls im Eintrag hinterlegt, sonst zum Startpunkt (Touren, Trails), zur Talstation (Skigebiete) bzw. zum Fotostandort.

@@ -186,6 +186,27 @@ export const THRESHOLDS = {
     riskPenalty: { green: 0, orange: 8, red: 15 },
   },
 
+  // -------------------------------------------------------------------------
+  // Learning from chosen plans and ratings (score points)
+  learning: {
+    /** A chosen plan counts like this many «passt» ratings for its activity. */
+    choiceWeight: 2,
+    /** Activity bonus only from this many signals of that activity on. */
+    minSignals: 3,
+    /** Smoothing: a few signals give only a small bonus. */
+    prior: 3,
+    /** Largest activity bonus/malus. */
+    maxActivityPoints: 8,
+    /** Per place: «passt», chosen, «passt nicht»; with caps. */
+    placeLike: 3,
+    placeChosen: 2,
+    placeLikeMax: 6,
+    placeDislike: 6,
+    placeDislikeMax: 12,
+    /** From this bonus on, the suggestion says so. */
+    reasonFrom: 3,
+  },
+
   selection: {
     count: 3,
     /** Diversity penalties applied to options similar to already chosen ones. */

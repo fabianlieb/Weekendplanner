@@ -86,6 +86,7 @@ export const REASON = {
   signposted: 'Signalisierter Trail',
   provenFavourite: 'Bewährt',
   newPlace: 'Neu für dich',
+  learnedLike: 'passt zu deinen bisherigen Wahlen',
 } as const;
 
 export function lightSentence(label: string, time: number, place: string): string {
