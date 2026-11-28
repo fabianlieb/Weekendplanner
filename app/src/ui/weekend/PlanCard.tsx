@@ -4,11 +4,11 @@ import type { Candidate, PlanB, Suggestion } from '../../engine/types';
 import { CHECK_HOLDS } from '../../engine/texts';
 import { addDays, formatTime } from '../../engine/util';
 import { RiskBadge } from '../components';
-import { openCalendarFile } from '../files';
 import { dayWithDate, weatherLine } from '../format';
 import { googleMapsUrl, navigationTarget } from '../geo';
-import { buildIcs } from '../ics';
-import { CalendarPlusIcon, NavigateIcon } from '../icons';
+import { NavigateIcon } from '../icons';
+import { CalendarButton } from './CalendarButton';
+import { ShareButton } from './ShareButton';
 import { navigate } from '../router';
 
 /** From this hour on the day before, the evening check is the main action. */
@@ -37,13 +37,6 @@ export function PlanCard({
   const nav = candidate ? navigationTarget(candidate) : undefined;
   const navUrl = nav ? googleMapsUrl(nav.point) : undefined;
   const badge = chosen.risk.applies ? (chosen.risk.color ? undefined : chosen.risk.signposted ? 'signalisiert' : 'unbekannt') : undefined;
-
-  const addToCalendar = () => {
-    if (!nav || !navUrl) return;
-    const appUrl = `${window.location.origin}${window.location.pathname}?view=detail&id=${encodeURIComponent(chosen.id)}`;
-    const ics = buildIcs({ s: chosen, place: { name: `${chosen.candidateName}, ${nav.label}`, lat: nav.point.lat, lon: nav.point.lon }, navigationUrl: navUrl, appUrl });
-    openCalendarFile(`wochenende-${chosen.date}.ics`, ics);
-  };
 
   return (
     <section className="plan-card" aria-label="Dein Plan">
@@ -84,9 +77,8 @@ export function PlanCard({
             {checkToday ? 'Check ansehen' : 'Plan öffnen'}
           </button>
         )}
-        <button type="button" className="btn btn-icon" aria-label="In Kalender eintragen" title="In Kalender eintragen" disabled={!nav} onClick={addToCalendar}>
-          <CalendarPlusIcon />
-        </button>
+        <CalendarButton s={chosen} candidate={candidate} />
+        <ShareButton s={chosen} candidate={candidate} />
         {navUrl && (
           <a className="btn btn-icon" href={navUrl} target="_blank" rel="noreferrer" aria-label={`Navigation mit Google Maps: ${nav?.label ?? 'Ziel'}`} title="Navigation (Google Maps)">
             <NavigateIcon />

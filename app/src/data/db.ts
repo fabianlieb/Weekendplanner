@@ -13,6 +13,7 @@ import type {
   Suggestion,
   WeekendInput,
 } from '../engine/types';
+import type { RadarHit } from '../engine/radar';
 
 export interface StoredRiskEntry extends RiskEntry {
   /** `${candidateId}|${date}` — one entry per tour and day; a new tap replaces it. */
@@ -50,6 +51,10 @@ export interface WeekendPlan {
   /** Number of candidates not suggested at all, per reason (a candidate may count for several). */
   excludedSummary?: Partial<Record<ExclusionReason, number>>;
   weather?: { fetchedAt?: string; fromStaleCache: boolean; error?: string };
+  /** Favourite places with very good conditions in the coming days. */
+  radar?: RadarHit[];
+  /** Packing list items ticked off, per suggestion id. */
+  packed?: Record<string, string[]>;
   /** Tours that only lack today's Skitourenguru colour (would fit otherwise). */
   awaitingColour?: string[];
   /** Ad-hoc start point (current location) the plan was computed from. */

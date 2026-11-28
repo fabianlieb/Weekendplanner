@@ -132,7 +132,28 @@ iOS öffnet «URL öffnen» je nach Version **in Safari statt in der installiert
 
 ### Kalender
 
-Der Kalender-Knopf (im Detailplan und in «Dein Plan») erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Kalendererinnerungen sind auf dem iPhone zuverlässig – eine gute Alternative zu den Kurzbefehlen. Auf dem iPhone öffnet sich der Dialog «Zum Kalender hinzufügen» (bitte einmal testen); am Computer wird die Datei heruntergeladen.
+Der Kalender-Knopf (im Detailplan und in «Dein Plan») erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan, Packliste und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Er bietet zwei Wege:
+
+- **Im Kalender öffnen:** Die App legt die Datei in ihren Offline-Speicher; der Service Worker liefert sie unter einer echten Adresse der App aus (`…/calendar/….ics`, `text/calendar`), und iOS zeigt «Zum Kalender hinzufügen». (Ein `data:`-Link funktioniert in der installierten App nicht.)
+- **Als Datei teilen:** Teilen-Menü → z. B. «In Dateien sichern», die Datei dort öffnen → «Alle hinzufügen». Funktioniert auch, wenn der erste Weg auf einer iOS-Version nicht greift.
+
+Am Computer wird die Datei heruntergeladen.
+
+### Packliste
+
+Jeder Plan hat eine Packliste: Grundausrüstung pro Sportart, angepasst an die Lage (LVS-Set bei Touren und nicht signalisierten Trails, Stirnlampe bei Abend- und Fototouren, Kamera und Stativ beim Fotospot) plus eigene Ergänzungen pro Ort (Editor: «Zusätzlich mitnehmen»). Im Detailplan abhaken; die Liste steht auch im Kalendereintrag.
+
+### Plan teilen
+
+Der Teilen-Knopf schickt einen Link, der den ganzen Plan enthält (nach dem `#`, wird also nie an einen Server übertragen). Wer ihn öffnet, sieht Zeitplan, Wetter, Risikohinweis, Packliste und Navigation – ohne App-Einrichtung, und nichts wird gespeichert.
+
+### Merkliste und Spot-Radar
+
+In der Liste markiert der **Stern** einen Ort für die Merkliste. Bei jeder Aktualisierung prüft die App die nächsten 7 Tage; Merkorte mit sehr guten Bedingungen (z. B. «Nebelmeer wahrscheinlich · Sonnenaufgang 07:34») erscheinen auf der Startseite unter «Merkliste · lohnt sich». Touren im Lawinengelände erscheinen dort bewusst nicht. Koordinaten neuer Orte lassen sich auch als **Google-Maps- oder Apple-Maps-Link** einfügen (z. B. von einem Instagram-Ort); Kurzlinks (maps.app.goo.gl) bitte zuerst im Browser öffnen und den langen Link kopieren.
+
+### Feedback
+
+Am Sonntagabend bewertest du jeden der 3 Vorschläge mit «Passt» oder «Passt nicht», dazu umgesetzt ja/nein und die Strenge. Die Auswertung (Profil → Auswertung) zeigt Umsetzungsrate, Ø passende Vorschläge und die Trefferquote pro Sportart.
 
 ### Navigation und Parkplatz
 
@@ -212,6 +233,8 @@ Entweder ein Array `[ … ]` oder ein Objekt `{ "candidates": [ … ] }`:
 | `done` | nein | «schon gemacht» (bewährt), Standard `false` |
 | `active` | nein | Wird vorgeschlagen, Standard `true` |
 | `parking` | nein | `{ lat, lon }` – Parkplatz für die Navigation (Google Maps) |
+| `favorite` | nein | Merkliste (Spot-Radar), Standard `false` |
+| `packing` | nein | Liste zusätzlicher Gegenstände für die Packliste |
 | `photoSpotIds` | nein | IDs zugeordneter Fotospots (sonst automatisch im Umkreis von 10 km) |
 | `link` | nein | Muss mit `http://` oder `https://` beginnen |
 | `note` | nein | Text |
@@ -251,7 +274,7 @@ Erzeugt von *Backup als JSON speichern*; Import wahlweise **zusammenführen** od
 - `equipment`: `alpine_ski`, `touring_ski`, `skins`, `avalanche_kit` (LVS, Sonde, Schaufel), `snowshoes`, `camera`, `tripod`
 - `earliestStart`: Minuten nach Mitternacht (300 = 05:00)
 - `riskEntries[].color`: nur `green`, `orange`, `red`; `dangerLevel` 1–5; `date` = Tag der Eingabe (gilt nur an diesem Tag)
-- `feedback[].strictness`: `too_easy`, `fitting`, `too_hard`; `fittingSuggestions` 0–3
+- `feedback[].strictness`: `too_easy`, `fitting`, `too_hard`; `fittingSuggestions` 0–3; optional `ratings`: `[{ suggestionId, candidateId, activity, fits }]`
 - Das Wetter wird nicht exportiert (wird neu geladen).
 
 ---

@@ -81,7 +81,35 @@ export function parseSwisstopoLink(text: string): LatLon | undefined {
   return undefined;
 }
 
-/** Accepts coordinates or a swisstopo link. */
+/**
+ * Coordinates from a Google Maps or Apple Maps link (e.g. an Instagram location opened in Maps):
+ * `@lat,lon`, `!3dlat!4dlon`, `?q=lat,lon`, `ll=`, `destination=`, `daddr=`.
+ * Short links (maps.app.goo.gl) cannot be resolved without a server → undefined.
+ */
+export function parseMapsLink(text: string): LatLon | undefined {
+  const t = decodeURIComponent(text.trim());
+  if (!/(google\.[a-z.]+\/maps|maps\.google\.|maps\.apple\.com|goo\.gl\/maps)/i.test(t)) return undefined;
+  const patterns = [
+    /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/,
+    /[?&](?:q|query|ll|sll|destination|daddr|center)=(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+  ];
+  for (const re of patterns) {
+    const m = t.match(re);
+    if (m) {
+      const lat = Number(m[1]);
+      const lon = Number(m[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) return { lat, lon };
+    }
+  }
+  return undefined;
+}
+
+/** Accepts coordinates, a swisstopo link or a Google/Apple Maps link. */
 export function parseCoordinatesOrLink(text: string): LatLon | undefined {
-  return parseSwisstopoLink(text) ?? parseCoordinates(text);
+  const link = parseSwisstopoLink(text) ?? parseMapsLink(text);
+  if (link) return link;
+  // Some other URL: do not guess numbers out of it.
+  if (/^\s*https?:\/\//i.test(text)) return undefined;
+  return parseCoordinates(text);
 }

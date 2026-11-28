@@ -32,6 +32,8 @@ interface Draft {
   photoSpotIds: string[];
   gpx?: string;
   parkingCoords: string;
+  packing: string;
+  favorite: boolean;
 }
 
 const KINDS: CandidateKind[] = ['ski_tour', 'snowshoe_trail', 'ski_resort', 'photo_spot'];
@@ -70,6 +72,8 @@ function toDraft(c: Candidate | undefined, kind: CandidateKind): Draft {
     photoSpotIds: c?.photoSpotIds ?? [],
     ...(c?.gpx ? { gpx: c.gpx } : {}),
     parkingCoords: c?.parking ? formatCoordinates(c.parking) : '',
+    packing: (c?.packing ?? []).join(String.fromCharCode(10)),
+    favorite: c?.favorite ?? false,
   };
 }
 
@@ -105,6 +109,14 @@ function fromDraft(d: Draft): Record<string, unknown> {
     ...opt('photoSpotIds', d.photoSpotIds.length ? d.photoSpotIds : undefined, d.kind !== 'photo_spot'),
     ...opt('gpx', d.gpx, isTour),
     ...opt('parking', parseCoordinates(d.parkingCoords)),
+    ...opt('favorite', d.favorite || undefined),
+    ...opt(
+      'packing',
+      (() => {
+        const list = d.packing.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        return list.length ? list : undefined;
+      })(),
+    ),
   };
 }
 
@@ -260,11 +272,18 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
           Schon gemacht (bewährt)
         </label>
         <label className="check">
+          <input type="checkbox" checked={d.favorite} onChange={(e) => set({ favorite: e.target.checked })} />
+          Merkliste (Spot-Radar meldet gute Bedingungen)
+        </label>
+        <label className="check">
           <input type="checkbox" checked={d.active} onChange={(e) => set({ active: e.target.checked })} />
           Aktiv (wird vorgeschlagen)
         </label>
         <Field label="Link" hint="z. B. swisstopo, SAC-Tourenportal oder Instagram" htmlFor="c-link">
           <input id="c-link" className="input" type="url" inputMode="url" value={d.link} placeholder="https://" onChange={(e) => set({ link: e.target.value })} />
+        </Field>
+        <Field label="Zusätzlich mitnehmen" hint="Ein Gegenstand pro Zeile, z. B. Steigeisen, Bargeld für den Parkplatz." htmlFor="c-pack">
+          <textarea id="c-pack" className="input" value={d.packing} onChange={(e) => set({ packing: e.target.value })} />
         </Field>
         <Field label="Notiz" htmlFor="c-note">
           <textarea id="c-note" className="input" value={d.note} onChange={(e) => set({ note: e.target.value })} />
@@ -318,7 +337,7 @@ function PointFields(props: {
   return (
     <Section title={props.title}>
       {props.hint && <span className="tiny muted">{props.hint}</span>}
-      <Field label="Koordinaten" hint="swisstopo-Link einfügen, LV95 (2'683'000, 1'248'000) oder WGS84 (46.8, 9.83)" htmlFor={`${props.idPrefix}-coords`}>
+      <Field label="Koordinaten" hint="Link von swisstopo, Google Maps oder Apple Maps einfügen – oder Koordinaten (WGS84 / LV95)" htmlFor={`${props.idPrefix}-coords`}>
         <input
           id={`${props.idPrefix}-coords`}
           className="input"

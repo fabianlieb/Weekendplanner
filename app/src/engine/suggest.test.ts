@@ -141,6 +141,14 @@ describe('stage 4 – selection', () => {
     expect(r.suggestions.filter((s) => !s.isNew).length).toBeGreaterThanOrEqual(1);
   });
 
+  it('Plan B is never one of the 3 suggestions', () => {
+    for (const ctx of [context(), context({ candidates: candidates.filter((c) => c.kind !== 'ski_tour') })]) {
+      const r = suggest(ctx);
+      expect(r.suggestions.some((s) => s.id === r.planB?.id)).toBe(false);
+      expect(r.suggestions.some((s) => s.candidateId === r.planB?.candidateId)).toBe(false);
+    }
+  });
+
   it('Plan B: different candidate; avalanche-free when suggestion 1 is a tour', () => {
     const first = result.suggestions[0]!;
     const b = result.planB!;
@@ -299,5 +307,20 @@ describe('stats', () => {
 
   it('risk source is labelled as manual Skitourenguru entry', () => {
     expect(MANUAL_SOURCE).toBe('Skitourenguru (manuell)');
+  });
+});
+
+describe('ratings per suggestion', () => {
+  it('counts fitting suggestions per activity', async () => {
+    const { ratingStats } = await import('./stats');
+    const r = ratingStats([
+      { weekend: '2026-12-05', implemented: true, fittingSuggestions: 2, ratings: [
+        { suggestionId: 'a', candidateId: 'a', activity: 'ski_tour', fits: true },
+        { suggestionId: 'b', candidateId: 'b', activity: 'ski', fits: false },
+        { suggestionId: 'c', candidateId: 'c', activity: 'ski_tour', fits: true },
+      ] },
+      { weekend: '2026-12-12', implemented: false, fittingSuggestions: 1 },
+    ]);
+    expect(r).toEqual({ ski_tour: { fits: 2, total: 2 }, ski: { fits: 0, total: 1 } });
   });
 });

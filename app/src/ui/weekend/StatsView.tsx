@@ -1,7 +1,9 @@
 import { getDb } from '../../data/db';
 import { listFeedback } from '../../data/repositories';
 import { feedbackAdjustment } from '../../engine/fit';
-import { feedbackStats } from '../../engine/stats';
+import { feedbackStats, ratingStats } from '../../engine/stats';
+import { ACTIVITIES } from '../../engine/profile';
+import { ACTIVITY_NAME } from '../labels';
 import { shortDate } from '../../engine/texts';
 import { PageHead, Section, useAsync } from '../components';
 import { navigate } from '../router';
@@ -41,6 +43,24 @@ export function StatsView() {
       <span className="small">
         Umgesetzt: {s.implemented} von {s.weekends}. Kondition durch Feedback angepasst: {adj === 0 ? 'nein' : `${adj > 0 ? '+' : ''}${Math.round(adj * 100)} %`}.
       </span>
+
+      {Object.keys(ratingStats(feedback)).length > 0 && (
+        <Section title="Passend pro Sportart">
+          <div className="list">
+            {ACTIVITIES.filter((a) => ratingStats(feedback)[a]).map((a) => {
+              const r = ratingStats(feedback)[a]!;
+              return (
+                <div key={a} className="list-item">
+                  <span className="grow small">{ACTIVITY_NAME[a]}</span>
+                  <span className="small">
+                    {r.fits} von {r.total} passend ({Math.round((100 * r.fits) / r.total)} %)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       <Section title="Wochenenden">
         {feedback.length === 0 && <span className="small muted">Noch kein Feedback.</span>}

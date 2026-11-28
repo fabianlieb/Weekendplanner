@@ -313,10 +313,12 @@ export function selectPlanB(valid: readonly ScoredOption[], chosen: readonly Sco
   if (!first) return undefined;
   const s = THRESHOLDS.selection;
   const chosenIds = new Set(chosen.map((c) => c.option.candidate.id));
+  // Plan B is a place not already among the suggestions; only if there is none, another suggestion's place.
+  const fresh = valid.filter((o) => !chosenIds.has(o.option.candidate.id));
+  const pool = fresh.length ? fresh : valid.filter((o) => o.option.candidate.id !== first.option.candidate.id && !chosen.includes(o));
   let best: ScoredOption | undefined;
   let bestScore = -Infinity;
-  for (const o of valid) {
-    if (o.option.candidate.id === first.option.candidate.id) continue;
+  for (const o of pool) {
     let score = o.total;
     // Avalanche risk can rise → an option without avalanche dependency on the same day.
     // Weather can turn → another day helps.
@@ -324,7 +326,6 @@ export function selectPlanB(valid: readonly ScoredOption[], chosen: readonly Sco
       if (!o.suggestion.avalancheDependent) score += s.planBIndependenceBonus;
       if (o.option.day === first.option.day) score += s.planBDayBonus;
     } else if (o.option.day !== first.option.day) score += s.planBDayBonus;
-    if (chosenIds.has(o.option.candidate.id)) score -= 5; // prefer something not already on the list
     if (score > bestScore) {
       bestScore = score;
       best = o;

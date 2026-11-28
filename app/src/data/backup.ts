@@ -18,6 +18,7 @@ import type {
   RiskColor,
   StartPoint,
   Strictness,
+  SuggestionRating,
 } from '../engine/types';
 import type { PlannerDB, StoredRiskEntry, WeekendPlan } from './db';
 import { newId, riskKey } from './repositories';
@@ -124,12 +125,14 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
   const eveningPossible = optional(v, 'eveningPossible', isBool, path, e, 'muss true/false sein');
   const priceChf = optional(v, 'priceChf', isNonNeg, path, e, 'Preis ungültig');
   const done = optional(v, 'done', isBool, path, e, 'muss true/false sein');
+  const favorite = optional(v, 'favorite', isBool, path, e, 'muss true/false sein');
   const active = optional(v, 'active', isBool, path, e, 'muss true/false sein');
   const region = optional(v, 'region', isStr, path, e, 'muss Text sein');
   const note = optional(v, 'note', isStr, path, e, 'muss Text sein');
   const link = optional(v, 'link', isStr, path, e, 'muss Text sein');
   const gpx = optional(v, 'gpx', isStr, path, e, 'muss Text sein');
   const photoSpotIds = optional(v, 'photoSpotIds', isStrArray, path, e, 'muss eine Liste von IDs sein');
+  const packing = optional(v, 'packing', isStrArray, path, e, 'muss eine Liste von Texten sein');
   let parking: { lat: number; lon: number } | undefined;
   if (v.parking !== undefined && v.parking !== null) {
     if (isObj(v.parking) && isNum(v.parking.lat, -90, 90) && isNum(v.parking.lon, -180, 180)) parking = { lat: v.parking.lat, lon: v.parking.lon };
@@ -160,6 +163,8 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
     ...(gpx !== undefined ? { gpx } : {}),
     ...(photoSpotIds !== undefined ? { photoSpotIds } : {}),
     ...(parking ? { parking } : {}),
+    ...(packing?.length ? { packing } : {}),
+    ...(favorite ? { favorite } : {}),
   };
 }
 
@@ -227,10 +232,17 @@ function validateFeedback(v: unknown, path: string, e: Errors): Feedback | undef
     e.add(`${path}.strictness`, 'muss too_easy, fitting oder too_hard sein');
     return undefined;
   }
+  const ratings = Array.isArray(v.ratings)
+    ? v.ratings.filter(
+        (r): r is SuggestionRating =>
+          isObj(r) && isStr(r.suggestionId) && isStr(r.candidateId) && ACTIVITIES.includes(r.activity as Activity) && isBool(r.fits),
+      )
+    : undefined;
   return {
     weekend: v.weekend,
     implemented: v.implemented,
     fittingSuggestions: v.fittingSuggestions as Feedback['fittingSuggestions'],
+    ...(ratings?.length ? { ratings } : {}),
     ...(isStr(v.reasonIfNot) ? { reasonIfNot: v.reasonIfNot } : {}),
     ...(v.strictness !== undefined ? { strictness: v.strictness as Strictness } : {}),
   };

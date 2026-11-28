@@ -1,6 +1,6 @@
 // Evaluation over the test weekends.
 
-import type { Feedback } from './types';
+import type { Activity, Feedback } from './types';
 
 export interface FeedbackStats {
   weekends: number;
@@ -20,4 +20,15 @@ export function feedbackStats(feedback: readonly Feedback[]): FeedbackStats {
     implementationRate: implemented / weekends,
     averageFitting: feedback.reduce((a, f) => a + f.fittingSuggestions, 0) / weekends,
   };
+}
+
+/** Share of suggestions rated «passt» per activity (only activities with ratings). */
+export function ratingStats(feedback: readonly Feedback[]): Partial<Record<Activity, { fits: number; total: number }>> {
+  const out: Partial<Record<Activity, { fits: number; total: number }>> = {};
+  for (const r of feedback.flatMap((f) => f.ratings ?? [])) {
+    const s = (out[r.activity] ??= { fits: 0, total: 0 });
+    s.total += 1;
+    if (r.fits) s.fits += 1;
+  }
+  return out;
 }

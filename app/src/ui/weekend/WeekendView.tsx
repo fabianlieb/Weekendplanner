@@ -20,6 +20,7 @@ import { navigate } from '../router';
 import { ColourEntry } from './ColourEntry';
 import { PlanCard } from './PlanCard';
 import { SuggestionList } from './SuggestionList';
+import { RadarList } from './RadarList';
 
 const WEEKDAY = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const BUDGETS: TimeBudget[] = ['full', 'half', 'free'];
@@ -281,6 +282,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
       )}
 
       {plan && <SuggestionList plan={plan} />}
+      {plan && <RadarList hits={plan.radar} hasFavorites={candidates.some((c) => c.favorite)} />}
       {!plan && busy && <span className="small muted">Vorschläge werden berechnet …</span>}
 
       <div className="status-line">

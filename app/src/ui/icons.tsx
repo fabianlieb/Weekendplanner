@@ -56,3 +56,20 @@ export function RefreshIcon({ size = 18 }: { size?: number }) {
     </svg>
   );
 }
+
+export function ShareIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base}>
+      <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
+      <path d="M5 11v9h14v-9" />
+    </svg>
+  );
+}
+
+export function StarIcon({ size = 22, filled = false }: { size?: number; filled?: boolean }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...base} fill={filled ? 'var(--accent)' : 'none'} stroke={filled ? 'var(--accent)' : 'currentColor'}>
+      <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9-4.3-4.1 5.9-.8z" strokeLinejoin="round" />
+    </svg>
+  );
+}

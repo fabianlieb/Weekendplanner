@@ -11,6 +11,7 @@ import { ListIcon, ProfileIcon, WeekendIcon } from './icons';
 import { navigate, useRoute, type View } from './router';
 import { CheckView } from './weekend/CheckView';
 import { DetailView } from './weekend/DetailView';
+import { SharedView } from './weekend/SharedView';
 import { FeedbackView } from './weekend/FeedbackView';
 import { StatsView } from './weekend/StatsView';
 import { WeekendView } from './weekend/WeekendView';
@@ -36,7 +37,8 @@ export function App() {
   useEffect(() => {
     void hasProfile(getDb())
       .then((has) => {
-        if (!has && route.view !== 'profile') navigate('profile', { welcome: '1' }, true);
+        // A shared plan opens for anyone, also without a profile.
+        if (!has && route.view !== 'profile' && route.view !== 'shared') navigate('profile', { welcome: '1' }, true);
       })
       .finally(() => setReady(true));
     // only on first render
@@ -67,6 +69,9 @@ export function App() {
       break;
     case 'stats':
       content = <StatsView />;
+      break;
+    case 'shared':
+      content = <SharedView />;
       break;
     default:
       // 'thursday' and 'suggestions' (deep links) → home

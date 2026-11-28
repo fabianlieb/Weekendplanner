@@ -3,7 +3,8 @@ import { getDb } from '../../data/db';
 import { chosenSuggestion, feedbackWeekend } from '../../data/planner';
 import { getWeekendPlan, saveFeedback } from '../../data/repositories';
 import { shortDate } from '../../engine/texts';
-import type { Feedback, Strictness } from '../../engine/types';
+import type { Feedback, Strictness, SuggestionRating } from '../../engine/types';
+import { DAY_SHORT } from '../../engine/texts';
 import { addDays, zurichToday } from '../../engine/util';
 import { Choice, Field, PageHead, Section, showToast, useAsync } from '../components';
 import { navigate } from '../router';
@@ -21,6 +22,7 @@ export function FeedbackView() {
   const [reason, setReason] = useState<string>();
   const [reasonText, setReasonText] = useState('');
   const [fitting, setFitting] = useState<Feedback['fittingSuggestions']>();
+  const [ratings, setRatings] = useState<Record<string, boolean>>({});
   const [strictness, setStrictness] = useState<Strictness>();
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export function FeedbackView() {
     if (!f) return;
     setImplemented(f.implemented);
     setFitting(f.fittingSuggestions);
+    if (f.ratings) setRatings(Object.fromEntries(f.ratings.map((r) => [r.suggestionId, r.fits])));
     if (f.strictness) setStrictness(f.strictness);
     if (f.reasonIfNot) {
       const chip = REASONS.find((r) => f.reasonIfNot?.startsWith(r));
@@ -38,15 +41,22 @@ export function FeedbackView() {
 
   if (!data) return null;
   const chosen = data.plan ? chosenSuggestion(data.plan) : undefined;
-  const complete = implemented !== undefined && fitting !== undefined && (!implemented || strictness !== undefined);
+  // Rate each of the (up to) 3 suggestions; the count of fitting ones follows from that.
+  const rateable = data.plan?.suggestions.slice(0, 3) ?? [];
+  const perSuggestion = rateable.length > 0;
+  const allRated = rateable.every((s) => ratings[s.id] !== undefined);
+  const fittingNow = (perSuggestion ? rateable.filter((s) => ratings[s.id]).length : fitting) as Feedback['fittingSuggestions'] | undefined;
+  const complete = implemented !== undefined && (perSuggestion ? allRated : fitting !== undefined) && (!implemented || strictness !== undefined);
 
   const save = async () => {
-    if (implemented === undefined || fitting === undefined) return;
+    if (implemented === undefined || fittingNow === undefined) return;
     const why = [reason, reasonText.trim()].filter(Boolean).join(': ');
+    const rated: SuggestionRating[] = rateable.map((s) => ({ suggestionId: s.id, candidateId: s.candidateId, activity: s.activity, fits: ratings[s.id] === true }));
     await saveFeedback(db, {
       weekend,
       implemented,
-      fittingSuggestions: fitting,
+      fittingSuggestions: fittingNow,
+      ...(perSuggestion ? { ratings: rated } : {}),
       ...(implemented && strictness ? { strictness } : {}),
       ...(!implemented && why ? { reasonIfNot: why } : {}),
     });
@@ -86,7 +96,30 @@ export function FeedbackView() {
         )}
       </Section>
 
-      <Section title="Haben die Vorschläge gepasst?">
+      <Section title="Haben die Vorschläge gepasst?" aside={perSuggestion ? `${rateable.filter((s) => ratings[s.id]).length} von ${rateable.length} passend` : undefined}>
+        {perSuggestion ? (
+          rateable.map((s) => (
+            <div key={s.id} className="rate-row">
+              <span className="small grow">
+                <strong>{s.candidateName}</strong>
+                <span className="muted">
+                  {' '}
+                  {DAY_SHORT[s.day]} · {s.activityLabel}
+                </span>
+              </span>
+              <Choice<'yes' | 'no'>
+                className="compact rate-choice"
+                label={`${s.candidateName} passend`}
+                options={[
+                  { value: 'yes', label: 'Passt' },
+                  { value: 'no', label: 'Passt nicht' },
+                ]}
+                value={ratings[s.id] === undefined ? undefined : ratings[s.id] ? 'yes' : 'no'}
+                onChange={(v) => setRatings({ ...ratings, [s.id]: v === 'yes' })}
+              />
+            </div>
+          ))
+        ) : (
         <Choice<Feedback['fittingSuggestions']>
           label="Passende Vorschläge"
           wrap
@@ -99,6 +132,7 @@ export function FeedbackView() {
           value={fitting}
           onChange={setFitting}
         />
+        )}
       </Section>
 
       {implemented && (

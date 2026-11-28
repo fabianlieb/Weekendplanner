@@ -86,6 +86,10 @@ export interface Candidate {
    * Photo spots: minimum stay; the light window may make it longer.
    */
   durationHours: number;
+  /** On the «Merkliste»: shown in the spot radar when conditions are very good. */
+  favorite?: boolean;
+  /** Extra items for the packing list of this place (e.g. «Steigeisen», «Bargeld für Parkplatz»). */
+  packing?: string[];
   /** Parking for navigation (optional). Without it, navigation goes to the start / photo position. */
   parking?: { lat: number; lon: number };
   /** Photo spots: walking time from parking to the spot, one way, minutes. */
@@ -135,6 +139,15 @@ export interface Feedback {
   reasonIfNot?: string;
   fittingSuggestions: 0 | 1 | 2 | 3;
   strictness?: Strictness;
+  /** Rating per suggestion of that weekend (fits / does not fit). */
+  ratings?: SuggestionRating[];
+}
+
+export interface SuggestionRating {
+  suggestionId: string;
+  candidateId: string;
+  activity: Activity;
+  fits: boolean;
 }
 
 // ---------------------------------------------------------------------------

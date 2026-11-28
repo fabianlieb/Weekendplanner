@@ -2,6 +2,7 @@
 
 import { eveningCheck, type CheckResult } from '../engine/eveningCheck';
 import { evaluateOptions, suggest } from '../engine/suggest';
+import { spotRadar } from '../engine/radar';
 import type { Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
 import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
@@ -129,6 +130,7 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     checks: previous?.checks ?? [],
     excludedSummary: summariseExclusions(result.excluded, validIds),
     awaitingColour: awaitingColour(result.excluded),
+    radar: spotRadar({ candidates, weather, dates: Array.from({ length: 7 }, (_, i) => addDays(today, i)) }),
     weather: weatherMeta,
     ...(opts.extraStartPoint ? { startPoint: opts.extraStartPoint } : {}),
   };

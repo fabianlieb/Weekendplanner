@@ -36,7 +36,18 @@ export default defineConfig({
         // App shell offline; weather and plans live in IndexedDB (no runtime caching of API calls).
         globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg}'],
         navigateFallback: 'index.html',
+        // Generated calendar files are not app pages.
+        navigateFallbackDenylist: [/\/calendar\/[^/]+\.ics$/],
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // The app writes .ics files into this cache (src/ui/files.ts); the service worker serves
+            // them from a real same-origin URL so iOS opens «Zum Kalender hinzufügen».
+            urlPattern: /\/calendar\/[^/]+\.ics$/,
+            handler: 'CacheOnly',
+            options: { cacheName: 'wp-ics' },
+          },
+        ],
       },
     }),
   ],

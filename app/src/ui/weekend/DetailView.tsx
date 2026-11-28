@@ -1,11 +1,13 @@
 import { getDb } from '../../data/db';
 import { currentWeekendPlan, findSuggestion } from '../../data/planner';
-import { choosePlan } from '../../data/repositories';
+import { choosePlan, setPacked } from '../../data/repositories';
+import { packingList } from '../../engine/packing';
 import { formatTime } from '../../engine/util';
 import { PageHead, Section, showToast, useAsync } from '../components';
-import { openCalendarFile, shareOrDownload } from '../files';
-import { buildIcs } from '../ics';
-import { CalendarPlusIcon, NavigateIcon } from '../icons';
+import { shareOrDownload } from '../files';
+import { NavigateIcon } from '../icons';
+import { CalendarButton } from './CalendarButton';
+import { ShareButton } from './ShareButton';
 import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } from '../format';
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
 import { navigate } from '../router';
@@ -38,6 +40,15 @@ export function DetailView({ id }: { id: string | undefined }) {
 
   const chosen = plan.chosenId === s.id;
   const isPlanB = plan.planB?.id === s.id;
+  const packing = packingList(s, candidate);
+  const packed = new Set(plan.packed?.[s.id] ?? []);
+  const togglePacked = async (item: string) => {
+    const next = new Set(packed);
+    if (next.has(item)) next.delete(item);
+    else next.add(item);
+    await setPacked(db, plan.weekend, s.id, [...next]);
+    reload();
+  };
 
   const choose = async () => {
     await choosePlan(db, plan.weekend, s.id);
@@ -47,13 +58,6 @@ export function DetailView({ id }: { id: string | undefined }) {
 
   const nav = candidate ? navigationTarget(candidate) : undefined;
   const navUrl = nav ? googleMapsUrl(nav.point) : undefined;
-
-  const addToCalendar = () => {
-    if (!nav || !navUrl) return;
-    const appUrl = `${window.location.origin}${window.location.pathname}?view=detail&id=${encodeURIComponent(s.id)}`;
-    const ics = buildIcs({ s, place: { name: `${s.candidateName}, ${nav.label}`, lat: nav.point.lat, lon: nav.point.lon }, navigationUrl: navUrl, appUrl });
-    openCalendarFile(`wochenende-${s.date}.ics`, ics);
-  };
 
   const exportGpx = async () => {
     if (!candidate?.gpx) return;
@@ -116,6 +120,21 @@ export function DetailView({ id }: { id: string | undefined }) {
         </details>
       )}
 
+      <details className="more" id="packliste" open={chosen && packed.size > 0 && packed.size < packing.length}>
+        <summary>
+          Packliste · {packed.size} von {packing.length}
+        </summary>
+        <div className="pack-list">
+          {packing.map((item) => (
+            <label key={item} className="check">
+              <input type="checkbox" checked={packed.has(item)} onChange={() => void togglePacked(item)} />
+              <span className={packed.has(item) ? 'muted' : ''}>{item}</span>
+            </label>
+          ))}
+        </div>
+        <span className="tiny muted">Eigene Ergänzungen pro Ort im Editor der Liste («Zusätzlich mitnehmen»).</span>
+      </details>
+
       <Section title="Unterwegs">
         {s.photo && (
           <span className="small">
@@ -154,9 +173,8 @@ export function DetailView({ id }: { id: string | undefined }) {
             Plan wählen
           </button>
         )}
-        <button type="button" className="btn btn-icon tall" aria-label="In Kalender eintragen" title="In Kalender eintragen" disabled={!nav} onClick={addToCalendar}>
-          <CalendarPlusIcon />
-        </button>
+        <CalendarButton s={s} candidate={candidate} tall />
+        <ShareButton s={s} candidate={candidate} tall />
         {navUrl && (
           <a className="btn btn-icon tall" href={navUrl} target="_blank" rel="noreferrer" aria-label={`Navigation mit Google Maps: ${nav?.label ?? 'Ziel'}`} title="Navigation (Google Maps)">
             <NavigateIcon />

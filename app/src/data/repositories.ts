@@ -79,6 +79,10 @@ export async function setDone(db: PlannerDB, id: string, done: boolean): Promise
   await db.candidates.update(id, { done });
 }
 
+export async function setFavorite(db: PlannerDB, id: string, favorite: boolean): Promise<void> {
+  await db.candidates.update(id, { favorite });
+}
+
 export function newId(prefix = 'c'): string {
   const rnd = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
   return `${prefix}-${rnd}`;
@@ -155,6 +159,12 @@ export async function choosePlan(db: PlannerDB, weekend: IsoDate, suggestionId: 
   if (!plan) return;
   const chosen = [...plan.suggestions, ...(plan.planB ? [plan.planB] : []), ...(plan.chosen ? [plan.chosen] : [])].find((s) => s.id === suggestionId);
   await db.weekendPlans.put({ ...plan, chosenId: suggestionId, ...(chosen ? { chosen } : {}) });
+}
+
+export async function setPacked(db: PlannerDB, weekend: IsoDate, suggestionId: string, items: string[]): Promise<void> {
+  const plan = await db.weekendPlans.get(weekend);
+  if (!plan) return;
+  await db.weekendPlans.put({ ...plan, packed: { ...(plan.packed ?? {}), [suggestionId]: items } });
 }
 
 export async function addEveningCheck(db: PlannerDB, weekend: IsoDate, check: EveningCheckRecord): Promise<void> {

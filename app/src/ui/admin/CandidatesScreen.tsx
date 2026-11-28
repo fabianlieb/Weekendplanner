@@ -1,5 +1,6 @@
 import { getDb } from '../../data/db';
-import { listCandidates, setDone } from '../../data/repositories';
+import { listCandidates, setDone, setFavorite } from '../../data/repositories';
+import { StarIcon } from '../icons';
 import { SEED_CANDIDATES } from '../../data/seed';
 import type { Candidate } from '../../engine/types';
 import { Notice, PageHead, Section, showToast, useAsync } from '../components';
@@ -32,6 +33,11 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
   const addSeed = async () => {
     const n = await loadSeed();
     showToast(n ? `${n} Einträge aus der Startliste hinzugefügt.` : 'Startliste ist schon vollständig vorhanden.');
+    reload();
+  };
+
+  const toggleFavorite = async (c: Candidate) => {
+    await setFavorite(db, c.id, !c.favorite);
     reload();
   };
 
@@ -81,6 +87,16 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
                     <span className="name">{c.name}</span>
                     <span className="meta">{meta(c)}</span>
                   </button>
+                  <button
+                    type="button"
+                    className="btn btn-icon btn-ghost"
+                    aria-pressed={c.favorite === true}
+                    aria-label={`${c.name} auf die Merkliste`}
+                    title="Merkliste (Spot-Radar)"
+                    onClick={() => void toggleFavorite(c)}
+                  >
+                    <StarIcon filled={c.favorite === true} />
+                  </button>
                   <label className="check small">
                     <input type="checkbox" checked={c.done} onChange={() => void toggleDone(c)} aria-label={`${c.name} schon gemacht`} />
                     gemacht
@@ -93,7 +109,7 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
       })}
 
       {candidates.length > 0 && (
-        <span className="tiny muted">«gemacht» = bewährt. Pro Wochenende kommen etwa 2 bewährte und 1 neue Option.</span>
+        <span className="tiny muted">Stern = Merkliste: der Spot-Radar auf der Startseite meldet sehr gute Bedingungen. «gemacht» = bewährt, pro Wochenende kommen etwa 2 bewährte und 1 neue Option.</span>
       )}
     </>
   );

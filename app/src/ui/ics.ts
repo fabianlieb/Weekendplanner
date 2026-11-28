@@ -54,10 +54,11 @@ export interface IcsInput {
   place: { name: string; lat: number; lon: number };
   navigationUrl: string;
   appUrl: string;
+  packing?: string[];
   now?: Date;
 }
 
-export function buildIcs({ s, place, navigationUrl, appUrl, now = new Date() }: IcsInput): string {
+export function buildIcs({ s, place, navigationUrl, appUrl, packing, now = new Date() }: IcsInput): string {
   const start = s.schedule[0]?.time ?? 8 * 60;
   const end = s.schedule.at(-1)?.time ?? start + 8 * 60;
   const dtStart = zurichToUtc(s.date, start);
@@ -73,6 +74,7 @@ export function buildIcs({ s, place, navigationUrl, appUrl, now = new Date() }: 
     desc.push(s.risk.bulletinHint);
   }
   desc.push('', 'Zeitplan:', ...s.schedule.map((i) => `${formatTime(i.time)} ${i.label}`));
+  if (packing?.length) desc.push('', 'Packliste:', ...packing.map((p) => `- ${p}`));
   desc.push('', `Navigation: ${navigationUrl}`, `Plan in der App: ${appUrl}`);
 
   const lines = [

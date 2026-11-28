@@ -63,3 +63,16 @@ describe('coordinates', () => {
     expect(googleMapsUrl({ lat: 46.7, lon: 9.9 })).toBe('https://www.google.com/maps/dir/?api=1&destination=46.70000,9.90000&travelmode=driving');
   });
 });
+
+describe('maps links', () => {
+  it('reads Google Maps and Apple Maps links', async () => {
+    const { parseMapsLink, parseCoordinatesOrLink } = await import('./geo');
+    expect(parseMapsLink('https://www.google.com/maps/place/S%C3%A4ntis/@47.2494,9.3433,14z/data=!3m1!4b1')).toEqual({ lat: 47.2494, lon: 9.3433 });
+    expect(parseMapsLink('https://www.google.com/maps/place/X/data=!4m6!3m5!1s0x0:0x0!8m2!3d47.2494!4d9.3433')).toEqual({ lat: 47.2494, lon: 9.3433 });
+    expect(parseMapsLink('https://maps.google.com/?q=46.95,7.44')).toEqual({ lat: 46.95, lon: 7.44 });
+    expect(parseMapsLink('https://maps.apple.com/?ll=47.0567,8.485&q=Rigi')).toEqual({ lat: 47.0567, lon: 8.485 });
+    expect(parseMapsLink('https://maps.app.goo.gl/AbC123')).toBeUndefined();
+    expect(parseCoordinatesOrLink('https://maps.app.goo.gl/AbC123')).toBeUndefined();
+    expect(parseCoordinatesOrLink('https://example.com/47/8')).toBeUndefined();
+  });
+});
