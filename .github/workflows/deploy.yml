@@ -4,9 +4,12 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  # Monthly: refresh the route catalogue (swisstopo/SAC, ASTRA) and redeploy.
   schedule:
+    # Monthly: refresh the route catalogue (swisstopo/SAC, ASTRA) and redeploy.
     - cron: '0 4 1 * *'
+    # Twice a day: fresh SLF snow depths (data/snow.json, written by the build).
+    - cron: '20 4 * * *'
+    - cron: '20 15 * * *'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +37,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - name: Refresh route catalogue
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '0 4 1 * *' || github.event_name == 'workflow_dispatch'
         # On failure the committed catalogue snapshot is used.
         continue-on-error: true
         run: node scripts/build-catalog.mjs

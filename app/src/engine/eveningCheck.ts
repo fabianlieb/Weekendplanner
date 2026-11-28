@@ -15,6 +15,7 @@ function reasonText(reasons: readonly ExclusionReason[]): { code: ExclusionReaso
   if (reasons.includes('risk_above_level')) return pick('risk_above_level', CHECK_REASON.riskAbove);
   if (reasons.includes('risk_red_unconfirmed')) return pick('risk_red_unconfirmed', CHECK_REASON.redUnconfirmed);
   if (reasons.includes('weather_missing')) return pick('weather_missing', CHECK_REASON.weatherMissing);
+  if (reasons.includes('snow_low')) return pick('snow_low', CHECK_REASON.snowLow);
   const weather = reasons.find((r) => r === 'weather_knockout' || r === 'conditions_poor');
   if (weather) return pick(weather, CHECK_REASON.weatherWorse);
   return pick(reasons[0] ?? 'conditions_poor', CHECK_REASON.other);
@@ -22,11 +23,8 @@ function reasonText(reasons: readonly ExclusionReason[]): { code: ExclusionReaso
 
 /**
  * `ctx.today` is the evening-check date; risk entries must be from that date (fail closed).
- * Only the plan's date is evaluated.
- */
-/**
- * `notBefore` (morning check on the day itself): alternatives must not depart before this time,
- * minutes since midnight.
+ * Only the plan's date is evaluated. `notBefore` (morning check on the day itself): alternatives
+ * must not depart before this time, minutes since midnight.
  */
 export function eveningCheck(ctx: EngineContext, plan: Suggestion, previousPlanB?: Suggestion, opts: { notBefore?: number } = {}): CheckResult {
   const { valid, excluded } = evaluateOptions({ ...ctx, onlyDates: [plan.date] });

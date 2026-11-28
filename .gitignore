@@ -5,3 +5,5 @@ dist/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo
+# Snow data for the dev server (node scripts/build-snow.mjs --public)
+app/public/data/

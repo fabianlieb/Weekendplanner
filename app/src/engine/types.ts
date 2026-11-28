@@ -1,6 +1,8 @@
 // Domain model of the weekend planner. The engine only depends on these types,
 // never on a data source (Open-Meteo, IndexedDB, ...), so it stays testable without a browser.
 
+import type { SnowObservation } from './snow';
+
 /** Local calendar date in Europe/Zurich, `YYYY-MM-DD`. */
 export type IsoDate = string;
 
@@ -352,7 +354,8 @@ export type ExclusionReason =
   | 'fitness'
   | 'weather_missing'
   | 'weather_knockout'
-  | 'conditions_poor';
+  | 'conditions_poor'
+  | 'snow_low';
 
 export interface WeatherHourRow {
   hour: number;
@@ -400,6 +403,8 @@ export interface Suggestion {
   reasons: string[];
   schedule: ScheduleItem[];
   travel: { minutes: number; estimated: boolean; startPointName: string; mode?: TravelMode; source?: TravelSource; transit?: TransitInfo };
+  /** Measured snow near the place (SLF IMIS), if a station is in reach. */
+  snow?: SnowObservation;
   photo?: PhotoAddOn;
   priceChf?: number;
   risk: RiskInfo;

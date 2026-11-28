@@ -15,6 +15,8 @@ import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } fro
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
 import { navigate } from '../router';
 import { RiskBlock } from './RiskBlock';
+import { SLF_URL } from '../../data/snow';
+import { shortDate } from '../../engine/texts';
 import { TransitSection } from './TransitSection';
 
 export function DetailView({ id }: { id: string | undefined }) {
@@ -82,6 +84,15 @@ export function DetailView({ id }: { id: string | undefined }) {
       <div className="stack-sm">
         {s.weather && <strong className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</strong>}
         <span className="small">{s.reasons.join(' ')}</span>
+        {s.snow && (
+          <span className="tiny muted">
+            Schnee gemessen: {s.snow.depthCm} cm, Neuschnee 3 Tage {s.snow.newSnow3dCm} cm · Station {s.snow.station} {s.snow.elevation} m ({s.snow.distanceKm} km) ·{' '}
+            {shortDate(s.snow.date)} ·{' '}
+            <a href={SLF_URL} target="_blank" rel="noreferrer">
+              SLF
+            </a>
+          </span>
+        )}
       </div>
 
       <Section title="Zeitplan" aside={`${formatDuration(s.travel.minutes)} ${transit ? 'ÖV' : 'Auto'}${s.travel.estimated ? ' (geschätzt)' : ''} ab ${s.travel.startPointName}`}>

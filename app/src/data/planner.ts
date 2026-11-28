@@ -16,6 +16,7 @@ import { learnPreferences, type Preferences } from '../engine/preferences';
 import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './weatherService';
 import { attachRoutedTravel, type RoutingFetch } from './routing';
 import { travelFor, type TravelTime } from '../engine/travel';
+import { loadSnow, snowByCandidate } from './snow';
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
@@ -25,6 +26,8 @@ export interface PlannerOptions extends WeatherLoadOptions {
   extraStartPoint?: StartPoint;
   /** Routing services (OSRM, transport.opendata.ch); tests inject a fake. */
   routingFetch?: RoutingFetch;
+  /** data/snow.json (tests inject a fake). */
+  snowFetch?: (url: string) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
 }
 
 /** Start point id meaning «current location». */
@@ -212,15 +215,16 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
   // Public transport: first evaluate with estimates, then look up real connections for the
   // places that can be suggested (best first) and evaluate again.
   const preferences = await loadPreferences(db, feedback, weekendKey(today));
+  const snow = snowByCandidate(pool, await loadSnow(db, opts.snowFetch), today);
   const likely =
     startPoint?.mode === 'transit'
-      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences })
+      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences, snow })
           .valid.sort((a, b) => b.total - a.total)
           .map((o) => o.option.candidate.id)
       : [];
   const candidates = await withTransit(db, pool, startPoint, [...new Set(likely)], run);
 
-  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback, preferences };
+  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback, preferences, snow };
   const result = suggest(ctx);
   const validIds = new Set(evaluateOptions(ctx).valid.map((o) => o.option.candidate.id));
   const weekend = weekendKey(today);
@@ -310,7 +314,8 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
-  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences };
+  const snow = snowByCandidate(candidates, await loadSnow(db, opts.snowFetch), today);
+  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences, snow };
   const planB = plan.planB && plan.planB.id !== chosen.id ? plan.planB : undefined;
   // On the day itself (morning check) an alternative must still be reachable from now on.
   const result = eveningCheck(ctx, chosen, planB, chosen.date === today ? { notBefore: zurichMinutes(now, today) } : {});
@@ -392,7 +397,8 @@ export async function explainCandidate(db: PlannerDB, candidateId: string, opts:
   const riskEntries = await new ManualRiskProvider(db).getEntries([candidate.id]);
   const { weather } = await loadWeather(db, [candidate], { ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
-  const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences });
+  const snow = snowByCandidate([candidate], await loadSnow(db, opts.snowFetch), today);
+  const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences, snow });
   const scores = [...plan.suggestions].map((s) => s.score);
   return {
     status: 'evaluated',

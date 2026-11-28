@@ -36,6 +36,8 @@ export default defineConfig({
         // App shell offline; weather and plans live in IndexedDB (no runtime caching of API calls).
         // routes.json = route catalogue (about 1.4 MB, so it works offline too)
         globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg,json}'],
+        // Snow data changes twice a day and is fetched at runtime (network first).
+        globIgnores: ['**/data/**'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
         // Generated calendar files are not app pages.

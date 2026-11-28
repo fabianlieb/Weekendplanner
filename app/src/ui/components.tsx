@@ -3,6 +3,7 @@ import type { RiskColor } from '../engine/types';
 import { ATTRIBUTION, ATTRIBUTION_LICENSE } from '../data/openMeteo';
 import { CATALOG_ATTRIBUTION } from '../data/catalog';
 import { ROUTING_ATTRIBUTION } from '../data/routing';
+import { SLF_URL, SNOW_ATTRIBUTION } from '../data/snow';
 import { LINKS, RISK_COLOR_SHORT } from './labels';
 
 export function PageHead({ overline, title, lead, icon }: { overline?: string; title: string; lead?: ReactNode; icon?: ReactNode }) {
@@ -99,7 +100,11 @@ export function Attribution() {
       <a href={LINKS.ccBy} target="_blank" rel="noreferrer">
         {ATTRIBUTION_LICENSE}
       </a>
-      ) · {CATALOG_ATTRIBUTION} · {ROUTING_ATTRIBUTION} · Lawinenrisiko: Farben von Skitourenguru, manuell eingetragen · Daten nur auf diesem Gerät
+      ) · {CATALOG_ATTRIBUTION} · {ROUTING_ATTRIBUTION} ·{' '}
+      <a href={SLF_URL} target="_blank" rel="noreferrer">
+        {SNOW_ATTRIBUTION}
+      </a>{' '}
+      · Lawinenrisiko: Farben von Skitourenguru, manuell eingetragen · Daten nur auf diesem Gerät
     </footer>
   );
 }

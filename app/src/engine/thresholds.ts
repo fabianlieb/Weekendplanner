@@ -187,6 +187,20 @@ export const THRESHOLDS = {
   },
 
   // -------------------------------------------------------------------------
+  // Measured snow depth (SLF IMIS flat-field stations)
+  snow: {
+    /** Station within this distance (km) of the route. */
+    maxKm: 12,
+    /** Station elevation between start − this and summit + that (m). */
+    belowStartM: 200,
+    aboveSummitM: 300,
+    /** Measurements older than this (days) are ignored. */
+    maxAgeDays: 2,
+    /** Less measured snow than this (cm): not suggested. Pistes and photo spots: no limit. */
+    minDepthCm: { ski_tour: 40, snowshoe: 30 },
+  },
+
+  // -------------------------------------------------------------------------
   // Learning from chosen plans and ratings (score points)
   learning: {
     /** A chosen plan counts like this many «passt» ratings for its activity. */

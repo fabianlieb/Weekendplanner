@@ -28,6 +28,7 @@ const WHY: Record<ExclusionReason, string> = {
   weather_missing: 'keine Wetterdaten',
   weather_knockout: 'Sturm',
   conditions_poor: 'Wetter und Bedingungen zu schlecht',
+  snow_low: 'zu wenig Schnee laut SLF-Messstation',
 };
 
 /** Reasons per day, merged over the time slots of that day. */

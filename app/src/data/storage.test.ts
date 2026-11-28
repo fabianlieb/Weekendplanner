@@ -4,6 +4,7 @@ import { candidates, freshRisks, input, profile } from '../engine/__fixtures__/s
 import { BACKUP_FORMAT, exportData, importJson, validateImport } from './backup';
 import { PlannerDB } from './db';
 import type { RoutingFetch } from './routing';
+import { loadSnow } from './snow';
 
 // No network in tests: routing services fail, the engine uses its estimates.
 beforeAll(() => {
@@ -201,6 +202,24 @@ describe('planner (storage + weather + engine)', () => {
     const before = plan.suggestions.find((s) => s.candidateId === pick.candidateId);
     const after = [...again.plan.suggestions, ...(again.plan.planB ? [again.plan.planB] : [])].find((s) => s.candidateId === pick.candidateId && s.date === pick.date);
     if (before && after) expect(after.score).toBeGreaterThan(before.score);
+  });
+
+  it('measured snow: too little snow at a tour excludes it; the data stays for offline use', async () => {
+    await seed();
+    const snowJson = {
+      generatedAt: '2026-12-03T05:00:00Z',
+      date: '2026-12-03',
+      stations: [{ c: 'PIZ2', n: 'Pizol Station', lat: 46.98, lon: 9.42, e: 2300, d: '2026-12-03', hs: 12, hn3: 0 }],
+    };
+    const snowFetch = async () => ({ ok: true, json: async () => snowJson });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [], snowFetch });
+    expect([...plan.suggestions, ...(plan.planB ? [plan.planB] : [])].some((s) => s.candidateId === 'pizol')).toBe(false);
+    expect(plan.excludedSummary?.snow_low).toBeGreaterThan(0);
+    // offline afterwards: the stored copy is used
+    const offline = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect((await loadSnow(db, offline))?.stations[0]?.c).toBe('PIZ2');
   });
 
   it('Thursday: computes and stores 3 suggestions + Plan B', async () => {

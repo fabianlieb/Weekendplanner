@@ -33,6 +33,7 @@ export const EXCLUSION_LABEL: Partial<Record<ExclusionReason, string>> = {
   weather_missing: 'keine Wetterdaten',
   weather_knockout: 'Sturm',
   conditions_poor: 'Bedingungen zu schlecht',
+  snow_low: 'zu wenig Schnee (SLF-Messstation)',
 };
 
 /** «4 × ohne Skitourenguru-Farbe von heute, 2 × Anreise zu lang» (merges risk_unknown/stale). */

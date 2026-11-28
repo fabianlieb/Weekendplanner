@@ -182,6 +182,12 @@ In der Liste markiert der **Stern** einen Ort für die Merkliste. Bei jeder Aktu
 
 Am Sonntagabend bewertest du jeden der 3 Vorschläge mit «Passt» oder «Passt nicht», dazu umgesetzt ja/nein und die Strenge. Die Auswertung (Profil → Auswertung) zeigt Umsetzungsrate, Ø passende Vorschläge und die Trefferquote pro Sportart.
 
+### Gemessene Schneehöhe
+
+Zweimal täglich (ca. 05:20 und 16:20) holt der Deploy-Workflow die Schneehöhen der SLF-Messstationen (IMIS, Versuchsfelder) und legt sie als `data/snow.json` zur App (die SLF-Schnittstelle erlaubt keinen direkten Abruf aus dem Browser). Für jeden Ort nimmt die App die nächste Station im Höhenband der Route (12 km, Start − 200 m bis Gipfel + 300 m, höchstens 2 Tage alt). Der Detailplan zeigt dann z. B. «Schnee gemessen: 51 cm, Neuschnee 3 Tage 0 cm · Station Wanne 1701 m (8 km)». Liegt bei einer **Skitour weniger als 40 cm** bzw. bei einem **Schneeschuh-Trail weniger als 30 cm**, wird der Ort nicht vorgeschlagen («zu wenig Schnee»). Ohne Station in der Nähe oder ohne Daten ändert sich nichts. Für den Dev-Server: `node scripts/build-snow.mjs --public`.
+
+Webcams sind nicht eingebaut: Eine freie Quelle ohne Schlüssel und ohne Scraping, die zuverlässig die Webcams beim Ort liefert, habe ich nicht gefunden.
+
 ### Die App lernt mit
 
 Was du an früheren Wochenenden mit **«Plan wählen»** gewählt hast (zählt doppelt) und wie du Vorschläge bewertet hast, gibt kleine Zusatzpunkte: pro Sportart höchstens ±8 (erst ab 3 Signalen), pro Ort +2 je Wahl bzw. +3 je «Passt» (max. +6) und −6 je «Passt nicht» (max. −12). Sicherheitsregeln und Filter bleiben davon unberührt; es ändert nur die Reihenfolge. Ab +3 steht beim Vorschlag «Passt zu deinen bisherigen Wahlen».
@@ -333,6 +339,7 @@ Alle Grenzwerte stehen in **einer** Datei: [`src/engine/thresholds.ts`](src/engi
 | `scoring.minConditionScore` | Mindestnote Bedingungen | 35 |
 | `selection.targetNew` | neue Optionen pro Wochenende | 1 |
 | `travelEstimate.*` | Anreise-Schätzung aus der Luftlinie | Auto: Faktor 1.3, 70 km/h, +10 min · ÖV: Faktor 1.4, 40 km/h, +30 min |
+| `snow.*` | gemessene Schneehöhe | Station ≤ 12 km, Höhenband Start − 200 m bis Gipfel + 300 m, ≤ 2 Tage alt · min. 40 cm Skitour, 30 cm Schneeschuh |
 | `routing.*` | berechnete Anreise | Auto × 1.1 + 10 min · Fussweg 4 km/h · max. 60 min zur Haltestelle · erste Abfahrt ÖV 05:30 · 120 Fahrplan-Abfragen pro Berechnung |
 | `photoAddOn.radiusKm` | automatische Fotospots im Umkreis | 10 km |
 
@@ -369,6 +376,7 @@ app/
 ## Datenquellen und Lizenzen
 
 - **Anreise:** Fahrzeiten vom öffentlichen Routenserver [OSRM](https://project-osrm.org/) (Kartendaten © OpenStreetMap-Mitwirkende), ÖV-Fahrplan von [transport.opendata.ch](https://transport.opendata.ch/). Gesendet werden nur der auf ~1 km gerundete Startpunkt und die Koordinaten der Orte; die Ergebnisse bleiben im Gerät (Auto 90 Tage, ÖV 30 Tage).
+- **Schnee:** [SLF](https://www.slf.ch) Messnetz IMIS (Schneehöhe, Neuschnee), SLF Data Service, CC BY 4.0 – Quellenangabe «Schneedaten: SLF (IMIS)» mit Link auf jeder Seite.
 - **Wetter:** [Open-Meteo](https://open-meteo.com/) – *Weather data by Open-Meteo.com*, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), nicht kommerziell. Modell `meteoswiss_icon_seamless` (MeteoSchweiz ICON-CH1/CH2, ca. 5 Tage), stundenweise ergänzt durch `best_match` (global). Sichtweite stammt immer aus dem globalen Modell (ICON-CH liefert keine). Die Quellenangabe ist auf jedem Screen sichtbar.
 - **Lawinenrisiko:** Farben von [Skitourenguru](https://www.skitourenguru.ch), **manuell** eingetragen. Kein Scraping – die Nutzungsrechte sind nicht geklärt. Für einen späteren automatischen Anbieter gibt es das Interface `AvalancheRiskProvider`.
 - **Sonne & Mond:** lokal mit [suncalc](https://github.com/mourner/suncalc).

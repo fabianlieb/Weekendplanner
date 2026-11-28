@@ -132,6 +132,7 @@ export const CHECK_REASON = {
   redUnconfirmed: 'Rote Tour ohne Bestätigung einer geschulten Gruppe.',
   weatherWorse: 'Die Prognose hat sich verschlechtert.',
   weatherMissing: 'Keine aktuellen Wetterdaten.',
+  snowLow: 'Laut SLF-Messstation liegt zu wenig Schnee.',
   other: 'Der Plan passt nicht mehr.',
 } as const;
 

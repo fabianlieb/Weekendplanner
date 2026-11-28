@@ -12,6 +12,7 @@ import { THRESHOLDS } from './thresholds';
 import { levelFor, tooDifficult } from './profile';
 import { computeTiming } from './timing';
 import { preferenceBonus, type Preferences } from './preferences';
+import { snowTooLow, type SnowObservation } from './snow';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
 export { travelFor } from './travel';
@@ -53,6 +54,8 @@ export interface EngineContext {
   onlyDates?: readonly IsoDate[];
   /** Learned from chosen plans and ratings (score bonus). */
   preferences?: Preferences;
+  /** Measured snow per candidate id (SLF IMIS), where a station is in reach. */
+  snow?: Readonly<Record<string, SnowObservation>>;
 }
 
 /** Adds «passt zu deinen bisherigen Wahlen» to the reasons when the learned bonus is noticeable. */
@@ -126,6 +129,8 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
     const base: ExclusionReason[] = [];
     if (!c.active) base.push('inactive');
     if (!profile.activities[activity].enabled) base.push('activity_disabled');
+    const snow = ctx.snow?.[c.id];
+    if (snowTooLow(activity, snow)) base.push('snow_low');
     if (tooDifficult(profile, c.kind, c.difficulty)) base.push('too_difficult');
     if (!requiredEquipment(c).every((e) => profile.equipment.includes(e))) base.push('equipment_missing');
 
@@ -238,6 +243,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
           ...(c.priceChf !== undefined ? { priceChf: c.priceChf } : {}),
           risk,
           ...(ws ? { weather: ws } : {}),
+          ...(snow ? { snow } : {}),
           isNew: !c.done,
           avalancheDependent: needsAvalancheRating(c),
         };
