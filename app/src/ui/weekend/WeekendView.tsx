@@ -10,7 +10,7 @@ import { DEFAULT_INPUT, getLastInput, getProfile, getWeekendPlan, listCandidates
 import { asksTrainedGroup } from '../../engine/profile';
 import { needsAvalancheRating } from '../../engine/risk';
 import { TRAINED_GROUP_QUESTION, shortDate } from '../../engine/texts';
-import type { Candidate, DayForm, MaxTravelHours, Profile, TimeBudget, WeekendInput } from '../../engine/types';
+import type { Candidate, DayForm, MaxTravelHours, Profile, TimeBudget, TravelMode, WeekendInput } from '../../engine/types';
 import { upcomingWeekend, weekday, zurichHour, zurichToday } from '../../engine/util';
 import { Choice, Notice, PageHead, Section } from '../components';
 import { formatClock } from '../format';
@@ -114,6 +114,8 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
   if (!data || !input) return null;
   const { profile, candidates } = data;
   const set = (patch: Partial<WeekendInput>) => setInput({ ...input, ...patch });
+  /** Weekend choice, else the start point's usual mode, else car. */
+  const modeOf = (inp: WeekendInput): TravelMode => inp.travelMode ?? profile.startPoints.find((s) => s.id === inp.startPointId)?.mode ?? 'car';
   const nothingPlanned = (!weekend.sat || input.budget.sat === 'free') && input.budget.sun === 'free';
   const head = <PageHead overline={WEEKDAY[weekday(today)]} title="Dein Wochenende" />;
 
@@ -136,7 +138,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
   const settings = [
     ...(weekend.sat ? [`Sa ${BUDGET_SHORT[planInput.budget.sat]}`] : []),
     `So ${BUDGET_SHORT[planInput.budget.sun]}`,
-    `${planInput.maxTravelHours} h`,
+    `${planInput.maxTravelHours} h ${modeOf(planInput) === 'transit' ? 'ÖV' : 'Auto'}`,
     DAY_FORM_LABEL[planInput.dayForm],
     startName,
   ].join(' · ');
@@ -200,10 +202,19 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
               </div>
             </div>
           </Section>
-          <Section title="Anreise max.">
+          <Section title="Anreise">
+            <Choice<TravelMode>
+              label="Anreise mit"
+              options={[
+                { value: 'car', label: 'Auto' },
+                { value: 'transit', label: 'ÖV' },
+              ]}
+              value={modeOf(input)}
+              onChange={(travelMode) => set({ travelMode })}
+            />
             <Choice<MaxTravelHours>
               label="Anreise maximal"
-              options={([1, 2, 3] as MaxTravelHours[]).map((h) => ({ value: h, label: `${h} h` }))}
+              options={([1, 2, 3] as MaxTravelHours[]).map((h) => ({ value: h, label: `max. ${h} h` }))}
               value={input.maxTravelHours}
               onChange={(maxTravelHours) => set({ maxTravelHours })}
             />
@@ -217,7 +228,11 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
               wrap={profile.startPoints.length > 2}
               options={[{ value: HERE, label: 'Standort' }, ...profile.startPoints.map((s) => ({ value: s.id, label: s.name }))]}
               value={input.startPointId}
-              onChange={(startPointId) => set({ startPointId })}
+              onChange={(startPointId) => {
+                // A saved start point brings its usual way of travelling; «Standort» keeps the current one.
+                const sp = profile.startPoints.find((s) => s.id === startPointId);
+                set({ startPointId, travelMode: sp?.mode ?? modeOf(input) });
+              }}
             />
           </Section>
           {asksTrainedGroup(profile) && (

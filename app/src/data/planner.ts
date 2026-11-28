@@ -7,11 +7,13 @@ import { getCatalog } from './catalog';
 import { spotRadar } from '../engine/radar';
 import type { Candidate, Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
+import { THRESHOLDS } from '../engine/thresholds';
 import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
 import { ManualRiskProvider } from './manualRiskProvider';
 import { addEveningCheck, getProfile, getWeekendPlan, listCandidates, listFeedback, saveWeekendPlan } from './repositories';
 import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './weatherService';
+import { attachRoutedTravel, type RoutingFetch } from './routing';
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
@@ -19,6 +21,8 @@ export interface PlannerOptions extends WeatherLoadOptions {
   catalog?: readonly Candidate[];
   /** Ad-hoc start point (current location) used for this computation and stored with the plan. */
   extraStartPoint?: StartPoint;
+  /** Routing services (OSRM, transport.opendata.ch); tests inject a fake. */
+  routingFetch?: RoutingFetch;
 }
 
 /** Start point id meaning «current location». */
@@ -60,6 +64,55 @@ export function resolveStartPoint(
 function withStartPoint(profile: Profile, sp: StartPoint | undefined): Profile {
   if (!sp || profile.startPoints.some((s) => s.id === sp.id)) return profile;
   return { ...profile, startPoints: [...profile.startPoints, sp] };
+}
+
+/** The weekend's start point with its travel mode (weekend choice, else the start point's default, else car). */
+function withTravelMode(profile: Profile, input: WeekendInput): { profile: Profile; startPoint?: StartPoint } {
+  const sp0 = profile.startPoints.find((s) => s.id === input.startPointId);
+  if (!sp0) return { profile };
+  const sp: StartPoint = { ...sp0, mode: input.travelMode ?? sp0.mode ?? 'car' };
+  const startPoints = profile.startPoints.map((s) => (s.id === sp.id ? sp : s));
+  // No trains before the first departures: public transport never starts earlier.
+  const earliestStart = sp.mode === 'transit' ? Math.max(profile.earliestStart, THRESHOLDS.routing.transitFirstDeparture) : profile.earliestStart;
+  return { profile: { ...profile, startPoints, earliestStart }, startPoint: sp };
+}
+
+interface RoutingRun {
+  now: Date;
+  date: IsoDate;
+  routingFetch?: RoutingFetch;
+}
+
+/**
+ * Candidate pool with routed travel times. Car: cached times for all places (cheap) so the
+ * pre-selection uses them, then one request for the pool's missing times. Public transport:
+ * cached times only; `withTransit` looks up the likely suggestions afterwards.
+ */
+async function routedPool(
+  db: PlannerDB,
+  args: Omit<Parameters<typeof selectPool>[0], 'startPoint'>,
+  startPoint: StartPoint | undefined,
+  run: RoutingRun,
+): Promise<Candidate[]> {
+  if (!startPoint) return selectPool(args);
+  const ro = { now: run.now, ...(run.routingFetch ? { fetchFn: run.routingFetch } : {}) };
+  const isCar = (startPoint.mode ?? 'car') === 'car';
+  const own = isCar ? await attachRoutedTravel(db, args.own, startPoint, ro) : args.own;
+  const catalog = isCar ? await attachRoutedTravel(db, args.catalog, startPoint, ro) : args.catalog;
+  const pool = selectPool({ ...args, own, catalog, startPoint });
+  return attachRoutedTravel(db, pool, startPoint, { ...ro, fetchMissing: isCar, date: run.date });
+}
+
+/** Public transport: timetable lookups for the given candidates first (cached afterwards). */
+async function withTransit(db: PlannerDB, pool: Candidate[], startPoint: StartPoint | undefined, priority: readonly string[], run: RoutingRun): Promise<Candidate[]> {
+  if (!startPoint || startPoint.mode !== 'transit') return pool;
+  return attachRoutedTravel(db, pool, startPoint, {
+    now: run.now,
+    date: run.date,
+    fetchMissing: true,
+    priority,
+    ...(run.routingFetch ? { fetchFn: run.routingFetch } : {}),
+  });
 }
 
 /** Saturday of the current/upcoming weekend (on Sunday: the day before), the key of a weekend plan. */
@@ -123,20 +176,35 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
   const now = opts.now ?? new Date();
   const today = zurichToday(now);
   const [savedProfile, own, feedback, catalog] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db), getCatalog(db, opts.catalog)]);
-  const profile = withStartPoint(savedProfile, opts.extraStartPoint);
+  const { profile, startPoint } = withTravelMode(withStartPoint(savedProfile, opts.extraStartPoint), input);
   const previousPlan = await getWeekendPlan(db, weekendKey(today));
-  const candidates = selectPool({
-    own,
-    catalog,
-    profile,
-    ...(profile.startPoints.find((s) => s.id === input.startPointId) ? { startPoint: profile.startPoints.find((s) => s.id === input.startPointId)! } : {}),
-    maxTravelHours: input.maxTravelHours,
-    dayForm: input.dayForm,
-    feedback,
-    include: new Set(previousPlan?.chosen ? [previousPlan.chosen.candidateId] : []),
-  });
-  const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
-  const { weather, ...weatherMeta } = await loadWeather(db, candidates, { ...opts, now });
+  const run: RoutingRun = { now, date: weekendKey(today), ...(opts.routingFetch ? { routingFetch: opts.routingFetch } : {}) };
+  const pool = await routedPool(
+    db,
+    {
+      own,
+      catalog,
+      profile,
+      maxTravelHours: input.maxTravelHours,
+      dayForm: input.dayForm,
+      feedback,
+      include: new Set(previousPlan?.chosen ? [previousPlan.chosen.candidateId] : []),
+    },
+    startPoint,
+    run,
+  );
+  const riskEntries = await new ManualRiskProvider(db).getEntries(pool.map((c) => c.id));
+  const { weather, ...weatherMeta } = await loadWeather(db, pool, { ...opts, now });
+
+  // Public transport: first evaluate with estimates, then look up real connections for the
+  // places that can be suggested (best first) and evaluate again.
+  const likely =
+    startPoint?.mode === 'transit'
+      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback })
+          .valid.sort((a, b) => b.total - a.total)
+          .map((o) => o.option.candidate.id)
+      : [];
+  const candidates = await withTransit(db, pool, startPoint, [...new Set(likely)], run);
 
   const ctx = { profile, input, candidates, riskEntries, weather, today, feedback };
   const result = suggest(ctx);
@@ -207,18 +275,24 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   if (chosen.date < today) return { status: 'past', plan, chosen };
 
   const [savedProfile, own, feedback, catalog] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db), getCatalog(db, opts.catalog)]);
-  const profile = withStartPoint(savedProfile, plan.startPoint);
-  const candidates = selectPool({
-    own,
-    catalog,
-    profile,
-    ...(profile.startPoints.find((s) => s.id === plan.input.startPointId) ? { startPoint: profile.startPoints.find((s) => s.id === plan.input.startPointId)! } : {}),
-    maxTravelHours: plan.input.maxTravelHours,
-    dayForm: plan.input.dayForm,
-    feedback,
-    // The chosen plan and its Plan B must be re-evaluated even if the pool changed.
-    include: new Set([chosen.candidateId, ...(plan.planB ? [plan.planB.candidateId] : [])]),
-  });
+  const { profile, startPoint } = withTravelMode(withStartPoint(savedProfile, plan.startPoint), plan.input);
+  const run: RoutingRun = { now, date: weekendKey(today), ...(opts.routingFetch ? { routingFetch: opts.routingFetch } : {}) };
+  const pool = await routedPool(
+    db,
+    {
+      own,
+      catalog,
+      profile,
+      maxTravelHours: plan.input.maxTravelHours,
+      dayForm: plan.input.dayForm,
+      feedback,
+      // The chosen plan and its Plan B must be re-evaluated even if the pool changed.
+      include: new Set([chosen.candidateId, ...(plan.planB ? [plan.planB.candidateId] : [])]),
+    },
+    startPoint,
+    run,
+  );
+  const candidates = await withTransit(db, pool, startPoint, [chosen.candidateId, ...(plan.planB ? [plan.planB.candidateId] : [])], run);
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback };

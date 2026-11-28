@@ -16,6 +16,7 @@ import type {
 import type { RadarHit } from '../engine/radar';
 import type { ImageCacheRow } from './placeImages';
 import type { TrackCacheRow } from './tracks';
+import type { TravelCacheRow } from './routing';
 
 export interface StoredRiskEntry extends RiskEntry {
   /** `${candidateId}|${date}` — one entry per tour and day; a new tap replaces it. */
@@ -89,6 +90,7 @@ export class PlannerDB extends Dexie {
   catalogState!: Table<CatalogStateRow, string>;
   imageCache!: Table<ImageCacheRow, string>;
   trackCache!: Table<TrackCacheRow, string>;
+  travelCache!: Table<TravelCacheRow, string>;
 
   constructor(name = 'wochenend-planer') {
     super(name);
@@ -102,6 +104,7 @@ export class PlannerDB extends Dexie {
     });
     this.version(2).stores({ catalogState: 'id' });
     this.version(3).stores({ imageCache: 'id', trackCache: 'id' });
+    this.version(4).stores({ travelCache: 'id' });
   }
 }
 

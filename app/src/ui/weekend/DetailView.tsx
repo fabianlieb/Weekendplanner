@@ -15,6 +15,7 @@ import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } fro
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
 import { navigate } from '../router';
 import { RiskBlock } from './RiskBlock';
+import { TransitSection } from './TransitSection';
 
 export function DetailView({ id }: { id: string | undefined }) {
   const db = getDb();
@@ -60,7 +61,9 @@ export function DetailView({ id }: { id: string | undefined }) {
   };
 
   const nav = candidate ? navigationTarget(candidate) : undefined;
-  const navUrl = nav ? googleMapsUrl(nav.point) : undefined;
+  const transit = s.travel.mode === 'transit';
+  // By public transport the journey ends at the start of the activity, not at a parking.
+  const navUrl = nav ? googleMapsUrl(transit && candidate ? candidate.valley : nav.point, s.travel.mode) : undefined;
 
   return (
     <>
@@ -81,7 +84,7 @@ export function DetailView({ id }: { id: string | undefined }) {
         <span className="small">{s.reasons.join(' ')}</span>
       </div>
 
-      <Section title="Zeitplan" aside={`${formatDuration(s.travel.minutes)}${s.travel.estimated ? ' (geschätzt)' : ''} ab ${s.travel.startPointName}`}>
+      <Section title="Zeitplan" aside={`${formatDuration(s.travel.minutes)} ${transit ? 'ÖV' : 'Auto'}${s.travel.estimated ? ' (geschätzt)' : ''} ab ${s.travel.startPointName}`}>
         <ol className="schedule">
           {s.schedule.map((i) => (
             <li key={`${i.time}-${i.label}`}>
@@ -91,6 +94,8 @@ export function DetailView({ id }: { id: string | undefined }) {
           ))}
         </ol>
       </Section>
+
+      {transit && <TransitSection s={s} />}
 
       {s.weather && (
         <details className="more">
@@ -147,7 +152,7 @@ export function DetailView({ id }: { id: string | undefined }) {
             Fotospot {s.photo.spotName} · {s.photo.lightLabel} um {formatTime(s.photo.time)}
           </span>
         )}
-        {nav && <span className="small">Ziel fürs Auto: {nav.label}</span>}
+        {nav && !transit && <span className="small">Ziel fürs Auto: {nav.label}</span>}
         {candidate?.difficulty && <span className="small">Schwierigkeit: {candidate.difficulty}</span>}
         {s.priceChf !== undefined && <span className="small">Tageskarte CHF {s.priceChf}</span>}
         <div className="row-wrap">
@@ -181,7 +186,14 @@ export function DetailView({ id }: { id: string | undefined }) {
         <CalendarButton s={s} candidate={candidate} tall />
         <ShareButton s={s} candidate={candidate} tall />
         {navUrl && (
-          <a className="btn btn-icon tall" href={navUrl} target="_blank" rel="noreferrer" aria-label={`Navigation mit Google Maps: ${nav?.label ?? 'Ziel'}`} title="Navigation (Google Maps)">
+          <a
+            className="btn btn-icon tall"
+            href={navUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${transit ? 'ÖV-Route' : 'Navigation'} mit Google Maps: ${transit ? 'Start' : (nav?.label ?? 'Ziel')}`}
+            title={transit ? 'ÖV-Route (Google Maps)' : 'Navigation (Google Maps)'}
+          >
             <NavigateIcon />
           </a>
         )}

@@ -121,7 +121,7 @@ iOS öffnet «URL öffnen» je nach Version **in Safari statt in der installiert
 
 1. **Donnerstag:** *Wochenende* öffnen. Die Startseite zeigt sofort Vorschläge mit deinen letzten Einstellungen und deinem Standort; sie aktualisiert sich **einmal pro Tag am Morgen** automatisch, sonst über «Aktualisieren».
    - **Skitourenguru-Farben:** Der Block «… passende Touren warten auf die Skitourenguru-Farbe von heute» listet nur Touren, die sonst zu dir passen würden. Pro Tour die aktuelle Farbe von [Skitourenguru](https://www.skitourenguru.ch) antippen (optional die Gefahrenstufe laut Bulletin) → **Mit diesen Farben neu vorschlagen**.
-   - **Einstellungen:** eine Zeile wie «Sa ganz · So frei · 2 h · Normal · Zuhause» – antippen öffnet Zeitbudget, Anreise max., Tagesform und Startpunkt → **Neu vorschlagen**.
+   - **Einstellungen:** eine Zeile wie «Sa ganz · So frei · 2 h Auto · Normal · Zuhause» – antippen öffnet Zeitbudget, Anreise (Auto oder ÖV, max. Stunden), Tagesform und Startpunkt → **Neu vorschlagen**. Ein gespeicherter Startpunkt bringt seine übliche Anreiseart aus dem Profil mit.
    - **Startpunkt «Standort»:** Liegt dein Standort weniger als 10 km von einem gespeicherten Startpunkt entfernt, gelten dessen Anreisezeiten; sonst schätzt die App ab dem Standort. Ohne Standortfreigabe rechnet sie ab dem gespeicherten Startpunkt (mit Hinweis). Der Standort bleibt auf dem Gerät.
    - Jede Karte zeigt das Wetter oben während der Aktivität, z. B. «−5 °C · Böen 25 km/h · 6 h Sonne · 12 cm Neuschnee», bei Bedarf «Nebelmeer wahrscheinlich».
    - Einen Vorschlag öffnen → **Plan wählen** (Leiste unten) → **Kalender-Knopf** (Kalender mit Plus) und **Navigation**. Der Plan erscheint dann oben als **«Dein Plan»** und bleibt erhalten, auch wenn er nach einer Aktualisierung nicht mehr vorgeschlagen würde.
@@ -322,7 +322,8 @@ Alle Grenzwerte stehen in **einer** Datei: [`src/engine/thresholds.ts`](src/engi
 | `fogSea.*` | Nebelmeer: tiefe Wolken im Tal, klarer Gipfel, Inversion | 70 % / 30 % / ≥ 0 °C |
 | `scoring.minConditionScore` | Mindestnote Bedingungen | 35 |
 | `selection.targetNew` | neue Optionen pro Wochenende | 1 |
-| `travelEstimate.*` | Anreise-Schätzung aus der Luftlinie | Faktor 1.3, 70 km/h, +10 min |
+| `travelEstimate.*` | Anreise-Schätzung aus der Luftlinie | Auto: Faktor 1.3, 70 km/h, +10 min · ÖV: Faktor 1.4, 40 km/h, +30 min |
+| `routing.*` | berechnete Anreise | Auto × 1.1 + 10 min · Fussweg 4 km/h · max. 60 min zur Haltestelle · erste Abfahrt ÖV 05:30 · 120 Fahrplan-Abfragen pro Berechnung |
 | `photoAddOn.radiusKm` | automatische Fotospots im Umkreis | 10 km |
 
 Nach einer Änderung `npm test` laufen lassen und pushen.
@@ -357,6 +358,7 @@ app/
 
 ## Datenquellen und Lizenzen
 
+- **Anreise:** Fahrzeiten vom öffentlichen Routenserver [OSRM](https://project-osrm.org/) (Kartendaten © OpenStreetMap-Mitwirkende), ÖV-Fahrplan von [transport.opendata.ch](https://transport.opendata.ch/). Gesendet werden nur der auf ~1 km gerundete Startpunkt und die Koordinaten der Orte; die Ergebnisse bleiben im Gerät (Auto 90 Tage, ÖV 30 Tage).
 - **Wetter:** [Open-Meteo](https://open-meteo.com/) – *Weather data by Open-Meteo.com*, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), nicht kommerziell. Modell `meteoswiss_icon_seamless` (MeteoSchweiz ICON-CH1/CH2, ca. 5 Tage), stundenweise ergänzt durch `best_match` (global). Sichtweite stammt immer aus dem globalen Modell (ICON-CH liefert keine). Die Quellenangabe ist auf jedem Screen sichtbar.
 - **Lawinenrisiko:** Farben von [Skitourenguru](https://www.skitourenguru.ch), **manuell** eingetragen. Kein Scraping – die Nutzungsrechte sind nicht geklärt. Für einen späteren automatischen Anbieter gibt es das Interface `AvalancheRiskProvider`.
 - **Sonne & Mond:** lokal mit [suncalc](https://github.com/mourner/suncalc).
@@ -370,8 +372,9 @@ app/
 ## Bekannte Grenzen
 
 - **Startliste und Skigebiete:** Beispiele bzw. eingebaute Skigebiete mit **ungefähren** Koordinaten – bei Bedarf prüfen («In swisstopo prüfen» im Editor).
-- **Katalog-Routen:** Start und Gipfel werden aus der Routenlinie und dem Höhenmodell abgeleitet; Dauer = SAC-Aufstiegszeit plus geschätzte Abfahrt. Anreise wird aus der Luftlinie geschätzt.
-- **Anreise:** ohne eingetragene Zeit nur eine Schätzung aus der Luftlinie – auch beim Startpunkt «Standort» weit weg von gespeicherten Startpunkten. Für verlässliche Pläne die Minuten pro Startpunkt eintragen (Tabelle *Anreisezeiten*).
+- **Katalog-Routen:** Start und Gipfel werden aus der Routenlinie und dem Höhenmodell abgeleitet; Dauer = SAC-Aufstiegszeit plus geschätzte Abfahrt.
+- **Anreise Auto:** eigene Minuten (Tabelle *Anreisezeiten*) haben Vorrang, sonst die berechnete Fahrzeit (OSRM, ohne Verkehr und Wintersperren, deshalb × 1.1 + 10 min), sonst eine Schätzung aus der Luftlinie («geschätzt»).
+- **Anreise ÖV:** schnellste Verbindung am Samstagmorgen zwischen der Haltestelle beim Startpunkt und der Haltestelle beim Start der Aktivität, plus geschätzter Fussweg. Liegt keine Haltestelle in einer Stunde Fussweg, gilt der Ort als nicht erreichbar. Pro Berechnung werden höchstens 120 Fahrplan-Abfragen gemacht, die aussichtsreichsten Orte zuerst; der Rest wird geschätzt und beim nächsten Mal nachgeholt. Keine Abfahrt vor 05:30 (erste Züge). Der Detailplan zeigt die konkrete Hin- und Rückfahrt; vor der Abfahrt in der SBB-App prüfen.
 - **Kalender auf dem iPhone:** ob die installierte App den Dialog «Zum Kalender hinzufügen» direkt öffnet, hängt von der iOS-Version ab – bitte testen.
 - **Foto-Zusatz:** Die Fahrt zwischen Fotospot und Aktivität wird vorsichtig aus der Luftlinie geschätzt; Bergketten kennt die App nicht. Fotospots deshalb am besten selbst zuordnen.
 - **Pisten offen, Andrang, Schneehöhe:** nicht berücksichtigt (keine freie Datenquelle); inaktive Skigebiete in der Liste ausschalten.

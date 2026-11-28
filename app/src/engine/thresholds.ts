@@ -43,6 +43,36 @@ export const THRESHOLDS = {
     averageSpeedKmh: 70,
     /** Fixed extra minutes (parking, last kilometres). */
     fixedMinutes: 10,
+    /** Public transport without a timetable answer: route ≈ air distance × factor at this speed, plus waiting/walking. */
+    transit: { roadFactor: 1.4, averageSpeedKmh: 40, fixedMinutes: 30 },
+  },
+
+  // -------------------------------------------------------------------------
+  // Routed travel times (OSRM for the car, transport.opendata.ch for public transport)
+  routing: {
+    /** OSRM ignores traffic and winter roads: minutes × factor + extra. */
+    carFactor: 1.1,
+    carExtraMinutes: 10,
+    /** Start point sent to OSRM rounded to this many decimals (~1 km). */
+    startDecimals: 2,
+    /** Walking speed to and from stops, km/h (path ≈ air distance × 1.3). */
+    walkKmh: 4,
+    /** A stop farther than this (walking minutes) from the start of the activity: no public transport time. */
+    maxWalkMinutes: 60,
+    /** Timetable query: departures from this time on the next Saturday. */
+    transitQueryTime: '06:00',
+    /** New public transport lookups per computation (the rest is estimated and looked up next time). */
+    transitLookupsPerRun: 120,
+    /** Parallel timetable requests. */
+    transitConcurrency: 4,
+    /** By public transport no departure before this time (first trains), minutes since midnight. */
+    transitFirstDeparture: 5 * 60 + 30,
+    /** Time to reach the stop after the activity, minutes (return connection not earlier). */
+    transitReturnBufferMinutes: 10,
+    /** Cache lifetime, days. */
+    carCacheDays: 90,
+    transitCacheDays: 30,
+    stationCacheDays: 180,
   },
 
   // -------------------------------------------------------------------------

@@ -192,7 +192,8 @@ function validateProfile(v: unknown, e: Errors): Profile | undefined {
   if (!Array.isArray(v.startPoints)) e.add('profile.startPoints', 'Liste fehlt');
   else
     v.startPoints.forEach((s, i) => {
-      if (isObj(s) && isStr(s.id) && isStr(s.name) && isNum(s.lat, -90, 90) && isNum(s.lon, -180, 180)) startPoints.push({ id: s.id, name: s.name, lat: s.lat, lon: s.lon });
+      if (isObj(s) && isStr(s.id) && isStr(s.name) && isNum(s.lat, -90, 90) && isNum(s.lon, -180, 180))
+        startPoints.push({ id: s.id, name: s.name, lat: s.lat, lon: s.lon, ...(s.mode === 'car' || s.mode === 'transit' ? { mode: s.mode } : {}) });
       else e.add(`profile.startPoints[${i}]`, 'braucht id, name, lat, lon');
     });
   if (e.list.length > before) return undefined;

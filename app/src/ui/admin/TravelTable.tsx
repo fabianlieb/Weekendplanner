@@ -56,7 +56,7 @@ export function TravelTable() {
       <button type="button" className="back-link" onClick={back}>
         ‹ Eigene Liste
       </button>
-      <PageHead overline="Liste" title="Anreisezeiten" lead="Minuten, einfache Fahrt mit dem Auto. Leer = Schätzung aus der Luftlinie (grau)." />
+      <PageHead overline="Liste" title="Anreisezeiten" lead="Minuten, einfache Fahrt mit dem Auto. Leer = automatisch: berechnete Fahrzeit, sonst Schätzung aus der Luftlinie (grau)." />
 
       {profile.startPoints.length === 0 ? (
         <Notice>Lege im Profil zuerst einen Startpunkt an.</Notice>

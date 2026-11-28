@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getDb } from '../../data/db';
 import { getProfile, hasProfile, newId, saveProfile } from '../../data/repositories';
 import { ACTIVITIES, AVALANCHE_ACTIVITIES, SKI_TOUR_GRADES, SNOWSHOE_GRADES, missingEquipment } from '../../engine/profile';
-import type { Activity, Equipment, Profile, RiskLevel, SkiTourGrade, SnowshoeGrade, StartPoint } from '../../engine/types';
+import type { Activity, Equipment, Profile, RiskLevel, SkiTourGrade, SnowshoeGrade, StartPoint, TravelMode } from '../../engine/types';
 import { formatTime, parseTime } from '../../engine/util';
 import { Choice, Field, Notice, PageHead, Section, showToast, useAsync } from '../components';
 import { formatCoordinates, parseCoordinatesOrLink as parseCoordinates } from '../geo';
@@ -17,6 +17,7 @@ interface StartPointDraft {
   id: string;
   name: string;
   coords: string;
+  mode: TravelMode;
 }
 
 interface Draft {
@@ -38,7 +39,7 @@ function build(d: Draft): { profile?: Profile; errors: string[] } {
     const c = parseCoordinates(s.coords);
     if (!s.name.trim()) errors.push(`Startpunkt ${i + 1}: Name fehlt.`);
     if (!c) errors.push(`Startpunkt ${i + 1}: Koordinaten nicht lesbar.`);
-    if (c && s.name.trim()) startPoints.push({ id: s.id, name: s.name.trim(), lat: c.lat, lon: c.lon });
+    if (c && s.name.trim()) startPoints.push({ id: s.id, name: s.name.trim(), lat: c.lat, lon: c.lon, mode: s.mode });
   });
   if (errors.length) return { errors };
   return { profile: { ...d.profile, fitness: { maxElevationGain: g, maxHours: h }, startPoints }, errors };
@@ -60,8 +61,8 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
       gain: String(p.fitness.maxElevationGain),
       hours: String(p.fitness.maxHours),
       points: p.startPoints.length
-        ? p.startPoints.map((s) => ({ id: s.id, name: s.name, coords: formatCoordinates(s) }))
-        : [{ id: 'home', name: 'Zuhause', coords: '' }],
+        ? p.startPoints.map((s) => ({ id: s.id, name: s.name, coords: formatCoordinates(s), mode: s.mode ?? 'car' }))
+        : [{ id: 'home', name: 'Zuhause', coords: '', mode: 'car' }],
     });
   }, [data]);
 
@@ -218,6 +219,15 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
                 <input id={`sp-coords-${i}`} className="input" inputMode="url" value={s.coords} placeholder="47.37, 8.54" onChange={(e) => setPoint(i, { coords: e.target.value })} />
               </Field>
             </div>
+            <Choice<TravelMode>
+              label="Anreise"
+              options={[
+                { value: 'car', label: 'Auto' },
+                { value: 'transit', label: 'ÖV' },
+              ]}
+              value={s.mode}
+              onChange={(mode) => setPoint(i, { mode })}
+            />
             <div className="row">
               <button type="button" className="btn grow" onClick={() => takeLocation(i)}>
                 Aktueller Standort
@@ -230,7 +240,7 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
             </div>
           </div>
         ))}
-        <button type="button" className="btn" onClick={() => setD({ ...d, points: [...d.points, { id: newId('sp'), name: '', coords: '' }] })}>
+        <button type="button" className="btn" onClick={() => setD({ ...d, points: [...d.points, { id: newId('sp'), name: '', coords: '', mode: 'car' }] })}>
           Startpunkt hinzufügen
         </button>
         <span className="tiny muted">Koordinaten als swisstopo-Link, LV95 oder WGS84. Auf dem Wochenende-Screen kannst du auch «Standort» wählen.</span>

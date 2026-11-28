@@ -37,7 +37,7 @@ export function PlanCard({
   const checkToday = [...plan.checks].reverse().find((c) => c.date === today);
   const checkTime = isTomorrow && hour >= CHECK_FROM_HOUR;
   const nav = candidate ? navigationTarget(candidate) : undefined;
-  const navUrl = nav ? googleMapsUrl(nav.point) : undefined;
+  const navUrl = nav ? googleMapsUrl(chosen.travel.mode === 'transit' && candidate ? candidate.valley : nav.point, chosen.travel.mode) : undefined;
   const badge = chosen.risk.applies ? (chosen.risk.color ? undefined : chosen.risk.signposted ? 'signalisiert' : 'unbekannt') : undefined;
 
   return (

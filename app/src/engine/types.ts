@@ -39,11 +39,40 @@ export interface GeoPoint {
   elevation: number;
 }
 
+export type TravelMode = 'car' | 'transit';
+/** Where a travel time comes from. */
+export type TravelSource = 'manual' | 'routed' | 'estimate';
+
 export interface StartPoint {
   id: string;
   name: string;
   lat: number;
   lon: number;
+  /** Usual way of travelling from here (default: car). */
+  mode?: TravelMode;
+}
+
+export interface StationRef {
+  id: string;
+  name: string;
+}
+
+/** Public transport legs behind a routed travel time. */
+export interface TransitInfo {
+  from: StationRef;
+  to: StationRef;
+  /** Walk from the start point to the first stop, minutes. */
+  walkToMinutes: number;
+  /** Walk from the last stop to the start of the activity, minutes. */
+  walkFromMinutes: number;
+}
+
+/** Travel time from a routing service for one start point and mode (attached by the planner, not stored). */
+export interface RoutedTravel {
+  startKey: string;
+  mode: TravelMode;
+  minutes: number;
+  transit?: TransitInfo;
 }
 
 export interface ActivitySetting {
@@ -103,8 +132,10 @@ export interface Candidate {
   parking?: { lat: number; lon: number };
   /** Photo spots: walking time from parking to the spot, one way, minutes. */
   approachMinutes?: number;
-  /** Manual travel time per start point id, minutes (one way). */
+  /** Manual travel time per start point id, minutes (one way, by car). */
   travelMinutes: Record<string, number>;
+  /** Routed travel time for the current start point (set by the planner, never stored). */
+  routedTravel?: RoutedTravel;
   /** Snowshoe trail is signposted (no avalanche rating needed). */
   signposted?: boolean;
   /** Tour or trail can also be done after sunset. */
@@ -136,6 +167,8 @@ export interface WeekendInput {
   budget: Record<DayKey, TimeBudget>;
   maxTravelHours: MaxTravelHours;
   startPointId: string;
+  /** Car or public transport for this weekend (default: the start point's mode). */
+  travelMode?: TravelMode;
   dayForm: DayForm;
   /** Answer to «Du bist in einer geschulten Gruppe?». Only relevant at risk level 3. */
   trainedGroupConfirmed: boolean;
@@ -366,7 +399,7 @@ export interface Suggestion {
   sub: SubScores;
   reasons: string[];
   schedule: ScheduleItem[];
-  travel: { minutes: number; estimated: boolean; startPointName: string };
+  travel: { minutes: number; estimated: boolean; startPointName: string; mode?: TravelMode; source?: TravelSource; transit?: TransitInfo };
   photo?: PhotoAddOn;
   priceChf?: number;
   risk: RiskInfo;

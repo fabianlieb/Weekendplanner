@@ -1,8 +1,14 @@
 import 'fake-indexeddb/auto';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { candidates, freshRisks, input, profile } from '../engine/__fixtures__/scenario';
 import { BACKUP_FORMAT, exportData, importJson, validateImport } from './backup';
 import { PlannerDB } from './db';
+import type { RoutingFetch } from './routing';
+
+// No network in tests: routing services fail, the engine uses its estimates.
+beforeAll(() => {
+  vi.stubGlobal('fetch', () => Promise.reject(new Error('no network in tests')));
+});
 import { ManualRiskProvider } from './manualRiskProvider';
 import { HERE, adoptAlternative, chosenSuggestion, computeSuggestions, feedbackWeekend, needsAutoCompute, resolveStartPoint, runEveningCheck, summariseExclusions, weekendKey } from './planner';
 import {
@@ -142,6 +148,29 @@ describe('weather cache', () => {
 });
 
 describe('planner (storage + weather + engine)', () => {
+  it('uses routed car times, and public transport never departs before the first trains', async () => {
+    await seed();
+    // Without manual travel times (a manual time always wins for the car).
+    await db.candidates.bulkPut(candidates.map((c) => ({ ...c, travelMinutes: {} })));
+    const osrm: RoutingFetch = async (url) => {
+      const n = url.split('?')[0]!.split(';').length - 1;
+      return { ok: true, json: async () => ({ code: 'Ok', durations: [[0, ...Array.from({ length: n }, () => 3000)]] }) };
+    };
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [], routingFetch: osrm });
+    for (const s of plan.suggestions) expect(s.travel).toMatchObject({ mode: 'car', source: 'routed', minutes: Math.round(50 * 1.1 + 10) });
+
+    // Public transport (timetable not reachable → estimates), departure not before 05:30.
+    const offline: RoutingFetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    const byTrain = await computeSuggestions(db, { ...input, travelMode: 'transit' }, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [], routingFetch: offline });
+    expect(byTrain.plan.suggestions.length).toBeGreaterThan(0);
+    for (const s of byTrain.plan.suggestions) {
+      expect(s.travel).toMatchObject({ mode: 'transit', source: 'estimate' });
+      expect(s.schedule[0]!.time).toBeGreaterThanOrEqual(5 * 60 + 30);
+    }
+  });
+
   it('Thursday: computes and stores 3 suggestions + Plan B', async () => {
     await seed();
     const { plan, weather } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });

@@ -1116,3 +1116,10 @@ img.thumb {
   border: 1px solid var(--hair);
   background: var(--soft);
 }
+
+/* Public transport legs in the detail plan */
+.transit-leg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

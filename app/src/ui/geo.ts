@@ -52,9 +52,9 @@ export function swisstopoUrl(p: LatLon, zoom = 7): string {
   return `https://map.geo.admin.ch/#/map?lang=de&center=${e},${n}&z=${zoom}&crosshair=marker&bgLayer=ch.swisstopo.pixelkarte-farbe&topic=ech`;
 }
 
-/** Google Maps directions (driving) to a point; opens the Google Maps app if installed. */
-export function googleMapsUrl(p: LatLon): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${p.lat.toFixed(5)},${p.lon.toFixed(5)}&travelmode=driving`;
+/** Google Maps directions to a point (by car or public transport); opens the Google Maps app if installed. */
+export function googleMapsUrl(p: LatLon, mode: 'car' | 'transit' = 'car'): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${p.lat.toFixed(5)},${p.lon.toFixed(5)}&travelmode=${mode === 'transit' ? 'transit' : 'driving'}`;
 }
 
 /** Where to drive to: parking if stored, else the start (tours, trails, resorts) or the photo position. */
