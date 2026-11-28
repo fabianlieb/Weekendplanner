@@ -1327,3 +1327,30 @@ img.thumb {
 .grm-chart .point-halo {
   fill: var(--bg);
 }
+
+/* Risk block: details open on demand (colour, level and bulletin hint stay visible) */
+details.risk-more {
+  border-top: 1px solid var(--hair);
+  margin-top: 2px;
+}
+details.risk-more summary {
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+details.risk-more summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 400;
+}
+details.risk-more[open] summary::after {
+  content: '–';
+}
+details.risk-more summary::-webkit-details-marker {
+  display: none;
+}
