@@ -17,6 +17,7 @@ import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './
 import { attachRoutedTravel, type RoutingFetch } from './routing';
 import { travelFor, type TravelTime } from '../engine/travel';
 import { loadSnow, snowByCandidate } from './snow';
+import { loadSlf, slfByCandidate, type SlfFetch } from './slf';
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
@@ -26,6 +27,8 @@ export interface PlannerOptions extends WeatherLoadOptions {
   extraStartPoint?: StartPoint;
   /** Routing services (OSRM, transport.opendata.ch); tests inject a fake. */
   routingFetch?: RoutingFetch;
+  /** SLF bulletin and warning regions (tests inject a fake). */
+  slfFetch?: SlfFetch;
   /** data/snow.json (tests inject a fake). */
   snowFetch?: (url: string) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
 }
@@ -216,15 +219,16 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
   // places that can be suggested (best first) and evaluate again.
   const preferences = await loadPreferences(db, feedback, weekendKey(today));
   const snow = snowByCandidate(pool, await loadSnow(db, opts.snowFetch), today);
+  const slf = slfByCandidate(pool, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
   const likely =
     startPoint?.mode === 'transit'
-      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences, snow })
+      ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences, snow, slf })
           .valid.sort((a, b) => b.total - a.total)
           .map((o) => o.option.candidate.id)
       : [];
   const candidates = await withTransit(db, pool, startPoint, [...new Set(likely)], run);
 
-  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback, preferences, snow };
+  const ctx = { profile, input, candidates, riskEntries, weather, today, feedback, preferences, snow, slf };
   const result = suggest(ctx);
   const validIds = new Set(evaluateOptions(ctx).valid.map((o) => o.option.candidate.id));
   const weekend = weekendKey(today);
@@ -315,7 +319,8 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
   const snow = snowByCandidate(candidates, await loadSnow(db, opts.snowFetch), today);
-  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences, snow };
+  const slf = slfByCandidate(candidates, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
+  const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences, snow, slf };
   const planB = plan.planB && plan.planB.id !== chosen.id ? plan.planB : undefined;
   // On the day itself (morning check) an alternative must still be reachable from now on.
   const result = eveningCheck(ctx, chosen, planB, chosen.date === today ? { notBefore: zurichMinutes(now, today) } : {});
@@ -398,7 +403,8 @@ export async function explainCandidate(db: PlannerDB, candidateId: string, opts:
   const { weather } = await loadWeather(db, [candidate], { ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
   const snow = snowByCandidate([candidate], await loadSnow(db, opts.snowFetch), today);
-  const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences, snow });
+  const slf = slfByCandidate([candidate], await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
+  const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences, snow, slf });
   const scores = [...plan.suggestions].map((s) => s.score);
   return {
     status: 'evaluated',

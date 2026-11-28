@@ -1,6 +1,7 @@
 import type { RiskInfo } from '../../engine/types';
 import { RiskBadge } from '../components';
 import { LINKS } from '../labels';
+import { formatClock } from '../format';
 
 /** Risk info for tours and snowshoe trails: colour (with text), danger level, freshness, bulletin hint. */
 export function RiskBlock({ risk }: { risk: RiskInfo }) {
@@ -12,6 +13,7 @@ export function RiskBlock({ risk }: { risk: RiskInfo }) {
         <strong className="small grow">{risk.label}</strong>
       </div>
       <span className="small">{risk.dangerLabel}</span>
+      {risk.slf && <span className="tiny muted">Automatisch geladen · gültig bis {formatClock(risk.slf.validTo)}</span>}
       {risk.freshnessNote && <span className="small muted">{risk.freshnessNote}</span>}
       {risk.groupNote && <strong className="small accent">{risk.groupNote}</strong>}
       <span className="small">

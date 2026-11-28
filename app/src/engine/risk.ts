@@ -1,5 +1,5 @@
-// Avalanche risk handling. The risk comes exclusively from Skitourenguru colours entered by
-// the user (or, later, another provider). The engine never computes a risk of its own.
+// Avalanche risk handling: Skitourenguru colours entered by the user, plus the official SLF
+// danger level of the place's warning region (loaded automatically, shown with every tour).
 
 import {
   BULLETIN_HINT,
@@ -10,8 +10,10 @@ import {
   dangerLabel,
   freshnessNote,
   riskLabel,
+  slfDangerLabel,
 } from './texts';
 import type { Candidate, IsoDate, RiskColor, RiskEntry, RiskInfo, RiskLevel, RiskStatus } from './types';
+import { validForDate, type SlfDanger } from './slf';
 
 /** Source of avalanche risk colours. MVP: manual entry. Later: an automatic provider. */
 export interface AvalancheRiskProvider {
@@ -82,12 +84,24 @@ export function riskDecision(status: RiskStatus, level: RiskLevel, trainedGroupC
   return 'allowed';
 }
 
-export function buildRiskInfo(c: Candidate, status: RiskStatus, planDate: IsoDate): RiskInfo {
+export function buildRiskInfo(c: Candidate, status: RiskStatus, planDate: IsoDate, slf?: SlfDanger): RiskInfo {
   const applies = showsAvalancheInfo(c);
   const signposted = c.kind === 'snowshoe_trail' && c.signposted === true;
   if (!applies) {
     return { applies, signposted, label: NOT_AVALANCHE_LABEL, dangerLabel: '', bulletinHint: '', freshnessNote: '' };
   }
+  const info = buildRiskInfoBase(status, planDate, applies, signposted);
+  if (!slf) return info;
+  // The official level is shown automatically; a level entered by hand stays as additional info.
+  const validForPlan = validForDate(slf, planDate);
+  return {
+    ...info,
+    dangerLabel: slfDangerLabel(slf.level, slf.subdivision, slf.regionName, validForPlan),
+    slf: { level: slf.level, ...(slf.subdivision ? { subdivision: slf.subdivision } : {}), regionName: slf.regionName, validTo: slf.validTo, validForPlan },
+  };
+}
+
+function buildRiskInfoBase(status: RiskStatus, planDate: IsoDate, applies: boolean, signposted: boolean): RiskInfo {
   if (status.kind === 'known') {
     const { color, dangerLevel, date } = status.entry;
     return {

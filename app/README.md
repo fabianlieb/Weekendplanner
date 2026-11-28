@@ -211,7 +211,7 @@ In der Liste (Katalog-Ort oder eigener Eintrag) prüft **«Warum nicht vorgeschl
 Umgesetzt in [`src/engine/risk.ts`](src/engine/risk.ts) und abgesichert in [`src/engine/safety.test.ts`](src/engine/safety.test.ts):
 
 1. Die App schreibt **nie** «sicher» – ein Test durchsucht allen App-Code und alle erzeugten Texte.
-2. Das Lawinenrisiko kommt **nur** aus den Skitourenguru-Farben, die du einträgst. Keine eigene Risikoberechnung, kein Scraping.
+2. Das Lawinenrisiko kommt aus den Skitourenguru-Farben, die du einträgst. Eine eigene Risikoberechnung auf Basis des offiziellen SLF-Bulletins ist erlaubt (noch nicht eingebaut); kein Scraping. Die **SLF-Gefahrenstufe** der Warnregion lädt die App automatisch (Bulletin und Warnregionen von aws.slf.ch, offene Daten) und zeigt sie bei jeder Tour mit Gültigkeit an.
 3. **Fail closed:** Ein Eintrag gilt nur **am Tag, an dem er gemacht wurde**. Fehlt die Farbe von heute (Skitour oder nicht signalisierter Schneeschuh-Trail), gilt das Risiko als unbekannt – keine Vorschläge, kein Plan B, und der Vorabend-Check wechselt auf Plan B.
 4. Filter nach dem Niveau pro Sportart im Profil (Skitour und Schneeschuh je Stufe 1–3): 1 → nur grün · 2 → grün und orange · 3 → zusätzlich rot. Sportarten, die du im Profil ausschaltest, werden nie vorgeschlagen.
 5. Rot nur bei Stufe 3 **und** Bestätigung «Du bist in einer geschulten Gruppe?» (wird jedes Wochenende neu gefragt, nie gespeichert). Hinweis: «nur in Gruppen mit geschulten Leuten, nie allein».

@@ -17,7 +17,7 @@ Web-App (PWA) für das iPhone, die jeden Donnerstag 3 Wochenendvorschläge + 1 P
 
 ## Sicherheit (nie brechen)
 - Nie «sicher» schreiben.
-- Lawinenrisiko nur aus Skitourenguru-Farben (grün/orange/rot), keine eigene Risikoberechnung, kein Scraping.
+- Lawinenrisiko aus Skitourenguru-Farben (grün/orange/rot) oder aus einer eigenen Risikoberechnung auf Basis des offiziellen SLF-Bulletins; kein Scraping.
 - Fehlendes oder veraltetes Risiko = unbekannt = nicht vorschlagen (fail closed).
 - Filter nach Risikostufe im Profil; Rot nur mit Bestätigung «geschulte Gruppe», Hinweis «nie allein».
 - Bei Touren immer Risikofarbe, Gefahrenstufe und Hinweis aufs SLF-Bulletin anzeigen.

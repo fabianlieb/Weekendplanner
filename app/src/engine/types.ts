@@ -337,6 +337,8 @@ export interface RiskInfo {
   groupNote?: string;
   /** «Stand Do 27.11. – am Vorabend neu prüfen». */
   freshnessNote: string;
+  /** Official SLF danger level of the place's warning region (loaded automatically). */
+  slf?: { level: DangerLevel; subdivision?: 'minus' | 'neutral' | 'plus'; regionName: string; validTo: string; validForPlan: boolean };
 }
 
 export interface PhotoAddOn {

@@ -89,11 +89,13 @@ export function DetailView({ id }: { id: string | undefined }) {
         {s.snow && (
           <span className="tiny muted icon-line">
             <MiniIcon name="snow" size={14} />
-            Schnee gemessen: {s.snow.depthCm} cm, Neuschnee 3 Tage {s.snow.newSnow3dCm} cm · Station {s.snow.station} {s.snow.elevation} m ({s.snow.distanceKm} km) ·{' '}
-            {shortDate(s.snow.date)} ·{' '}
-            <a href={SLF_URL} target="_blank" rel="noreferrer">
-              SLF
-            </a>
+            <span>
+              Schnee gemessen: {s.snow.depthCm} cm, Neuschnee 3 Tage {s.snow.newSnow3dCm} cm · Station {s.snow.station} {s.snow.elevation} m ({s.snow.distanceKm} km) ·{' '}
+              {shortDate(s.snow.date)} ·{' '}
+              <a href={SLF_URL} target="_blank" rel="noreferrer">
+                SLF
+              </a>
+            </span>
           </span>
         )}
       </div>

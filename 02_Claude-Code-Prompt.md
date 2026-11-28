@@ -23,7 +23,7 @@ Eine **Web-App (PWA)** für mein iPhone 15 Pro, die mir jeden Donnerstag **3 rea
 ## Sicherheitsregeln (nicht verhandelbar, mit Tests absichern)
 
 1. Die App schreibt **nie** «sicher». Höchstens «geringes Risiko laut Skitourenguru».
-2. Das Lawinenrisiko kommt **ausschliesslich** aus Skitourenguru-Farben (grün / orange / rot). **Keine eigene Risikoberechnung.**
+2. Das Lawinenrisiko kommt aus Skitourenguru-Farben (grün / orange / rot) oder aus einer eigenen Risikoberechnung auf Basis des offiziellen SLF-Bulletins (Regel am 28.11.2026 geändert).
 3. **Fail closed:** Fehlt die Risikofarbe einer Skitour oder Schneeschuhtour ohne Signalisation, oder ist sie älter als der aktuelle Tag, gilt sie als «unbekannt» und wird **nicht vorgeschlagen**.
 4. Filter nach der Risikostufe im Profil: Stufe 1 → nur grün · Stufe 2 → grün und orange · Stufe 3 → zusätzlich rot.
 5. **Rote Touren nur mit Bestätigung** («Du bist in einer geschulten Gruppe?»), sonst ausblenden. Hinweis bei Rot: «nur in Gruppen mit geschulten Leuten, nie allein».

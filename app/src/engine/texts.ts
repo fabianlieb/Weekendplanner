@@ -57,6 +57,14 @@ export function dangerLabel(level: DangerLevel | undefined): string {
   return level ? `Gefahrenstufe ${level} laut Bulletin` : 'Gefahrenstufe nicht eingetragen';
 }
 
+const LEVEL_WORD: Record<DangerLevel, string> = { 1: 'gering', 2: 'mässig', 3: 'erheblich', 4: 'gross', 5: 'sehr gross' };
+
+/** «Gefahrenstufe 3− (erheblich) laut SLF-Bulletin, Region Guttannen» (+ note if not for the plan day). */
+export function slfDangerLabel(level: DangerLevel, subdivision: string | undefined, regionName: string, validForPlan: boolean): string {
+  const lv = `${level}${subdivision === 'minus' ? '−' : subdivision === 'plus' ? '+' : ''}`;
+  return `Gefahrenstufe ${lv} (${LEVEL_WORD[level]}) laut SLF-Bulletin, Region ${regionName}${validForPlan ? '' : ' – aktuelles Bulletin, für den Tag des Plans am Vorabend neu prüfen'}`;
+}
+
 export function freshnessNote(entryDate: IsoDate, planDate: IsoDate): string {
   return entryDate === planDate
     ? `Stand ${shortDate(entryDate)}`

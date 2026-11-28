@@ -13,6 +13,7 @@ import { levelFor, tooDifficult } from './profile';
 import { computeTiming } from './timing';
 import { preferenceBonus, type Preferences } from './preferences';
 import { snowTooLow, type SnowObservation } from './snow';
+import type { SlfDanger } from './slf';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
 export { travelFor } from './travel';
@@ -56,6 +57,8 @@ export interface EngineContext {
   preferences?: Preferences;
   /** Measured snow per candidate id (SLF IMIS), where a station is in reach. */
   snow?: Readonly<Record<string, SnowObservation>>;
+  /** Official SLF danger per candidate id (tours and trails). */
+  slf?: Readonly<Record<string, SlfDanger>>;
 }
 
 /** Adds «passt zu deinen bisherigen Wahlen» to the reasons when the learned bonus is noticeable. */
@@ -215,7 +218,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
           }
         }
 
-        const risk = buildRiskInfo(c, riskStatus, date);
+        const risk = buildRiskInfo(c, riskStatus, date, ctx.slf?.[c.id]);
         const ws = w ? weatherSummary({ candidate: c, weather: w, date, window: timing.window, slot, astro: astroSummit }) : undefined;
         const fit = fitScore(c, cap, input.dayForm);
         const riskPenalty = risk.color ? THRESHOLDS.scoring.riskPenalty[risk.color] : 0;
