@@ -5,9 +5,10 @@ import { choosePlan, setPacked } from '../../data/repositories';
 import { packingList } from '../../engine/packing';
 import { formatTime } from '../../engine/util';
 import { PageHead, Section, showToast, useAsync } from '../components';
-import { shareOrDownload } from '../files';
-import { NavigateIcon } from '../icons';
+import { NavigateIcon, SportIcon } from '../icons';
 import { CalendarButton } from './CalendarButton';
+import { RouteSection } from './RouteSection';
+import { PlacePicture } from '../media';
 import { ShareButton } from './ShareButton';
 import { dayWithDate, formatClock, formatDuration, signedTemp, weatherLine } from '../format';
 import { googleMapsUrl, navigationTarget, swisstopoUrl } from '../geo';
@@ -60,16 +61,17 @@ export function DetailView({ id }: { id: string | undefined }) {
   const nav = candidate ? navigationTarget(candidate) : undefined;
   const navUrl = nav ? googleMapsUrl(nav.point) : undefined;
 
-  const exportGpx = async () => {
-    if (!candidate?.gpx) return;
-    const name = `${candidate.name.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '')}.gpx`;
-    await shareOrDownload(name, candidate.gpx, 'application/gpx+xml');
-  };
-
   return (
     <>
       {back}
-      <PageHead overline={`${isPlanB ? 'Plan B · ' : ''}${s.activityLabel} · ${dayWithDate(s.day, s.date)}`} title={s.candidateName} {...(s.region ? { lead: s.region } : {})} />
+      <PageHead
+        icon={<SportIcon activity={s.activity} />}
+        overline={`${isPlanB ? 'Plan B · ' : ''}${s.activityLabel} · ${dayWithDate(s.day, s.date)}`}
+        title={s.candidateName}
+        {...(s.region ? { lead: s.region } : {})}
+      />
+
+      <PlacePicture candidateId={s.candidateId} />
 
       <RiskBlock risk={s.risk} />
 
@@ -136,6 +138,8 @@ export function DetailView({ id }: { id: string | undefined }) {
         <span className="tiny muted">Eigene Ergänzungen pro Ort im Editor der Liste («Zusätzlich mitnehmen»).</span>
       </details>
 
+      <RouteSection candidate={candidate} />
+
       <Section title="Unterwegs">
         {s.photo && (
           <span className="small">
@@ -150,11 +154,6 @@ export function DetailView({ id }: { id: string | undefined }) {
             <a className="btn" href={swisstopoUrl(candidate.summit)} target="_blank" rel="noreferrer">
               Karte (swisstopo)
             </a>
-          )}
-          {candidate?.gpx && (
-            <button type="button" className="btn" onClick={() => void exportGpx()}>
-              GPX exportieren
-            </button>
           )}
           {candidate?.link && (
             <a className="btn" href={candidate.link} target="_blank" rel="noreferrer">

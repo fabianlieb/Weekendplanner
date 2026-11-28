@@ -104,6 +104,8 @@ export function sacRouteToEntry(feature, kind, firstHeight) {
     ...(kind === 'snowshoe' ? { signposted: false } : {}),
     link: a.url_sac_de || undefined,
     source: 'swisstopo/SAC',
+    // Route line on demand: api3.geo.admin.ch/rest/services/api/MapServer/<layer>/<featureId>
+    track: { layer: kind === 'ski_tour' ? LAYERS.skiTours : LAYERS.sacSnowshoe, featureId: String(feature.id ?? feature.featureId) },
   };
 }
 
@@ -130,5 +132,6 @@ export function astraTrailToEntry(feature, startHeight) {
     ...(a.beschreibr ? { note: a.beschreibr } : {}),
     link: a.chmurl_de || undefined,
     source: 'ASTRA/SchweizMobil',
+    track: { layer: LAYERS.astraSnowshoe, featureId: String(feature.id ?? feature.featureId) },
   };
 }

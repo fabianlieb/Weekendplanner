@@ -20,6 +20,7 @@ interface RouteEntry {
   note?: string;
   link?: string;
   source: string;
+  track?: { layer: string; featureId: string };
 }
 
 let cached: Promise<Candidate[]> | undefined;

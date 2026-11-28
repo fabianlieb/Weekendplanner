@@ -119,6 +119,8 @@ export interface Candidate {
   photoSpotIds?: string[];
   /** Optional GPX track as XML text. */
   gpx?: string;
+  /** Catalogue route line, loaded on demand (geo.admin.ch layer + feature id). */
+  track?: { layer: string; featureId: string };
 }
 
 export interface RiskEntry {

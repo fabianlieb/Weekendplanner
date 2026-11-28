@@ -39,6 +39,7 @@ describe('catalogue conversion', () => {
       elevationGain: 660,
       difficulty: 'L',
       source: 'swisstopo/SAC',
+      track: { layer: 'ch.swisstopo-karto.skitouren', featureId: '{008e0435-2eab-4612-bcea-db20103b6f10}' },
     });
     expect(asIs.valley.elevation).toBe(1000);
     expect(asIs.summit.elevation).toBe(1655);

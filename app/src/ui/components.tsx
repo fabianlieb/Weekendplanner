@@ -4,10 +4,15 @@ import { ATTRIBUTION, ATTRIBUTION_LICENSE } from '../data/openMeteo';
 import { CATALOG_ATTRIBUTION } from '../data/catalog';
 import { LINKS, RISK_COLOR_SHORT } from './labels';
 
-export function PageHead({ overline, title, lead }: { overline?: string; title: string; lead?: ReactNode }) {
+export function PageHead({ overline, title, lead, icon }: { overline?: string; title: string; lead?: ReactNode; icon?: ReactNode }) {
   return (
     <header className="page-head">
-      {overline && <span className="overline">{overline}</span>}
+      {overline && (
+        <span className="overline overline-row">
+          {icon}
+          {overline}
+        </span>
+      )}
       <h1>{title}</h1>
       {lead && <span className="lead">{lead}</span>}
     </header>

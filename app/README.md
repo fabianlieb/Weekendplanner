@@ -148,6 +148,12 @@ Die App schlägt aus einem **Katalog** vor; die eigene Liste ergänzt ihn (z. B.
 - **Aktualisierung:** `node scripts/build-catalog.mjs` lädt die Daten über die offene API von geo.admin.ch (ohne Schlüssel) nach `public/catalog/routes.json`. Der Deploy-Workflow macht das monatlich automatisch (bei einem Fehler bleibt der gespeicherte Stand).
 - **Lizenz:** Open Government Data; die Quellenangabe ist Pflicht und steht auf jeder Seite («Routen: © swisstopo / SAC · Schneeschuhwanderwege: ASTRA / SchweizMobil»). Routenangaben ohne Gewähr – der effektive Verlauf hängt von den Verhältnissen ab.
 
+### Bilder, Sport-Symbole und GPS-Tracks
+
+- **Sport-Symbol** (Ski, Skitour, Schneeschuh, Foto) auf jeder Karte, in «Dein Plan» und im Detailplan.
+- **Bild pro Ort:** von Wikipedia / Wikimedia Commons, nur wenn ein Artikel in der Nähe des Ziels zum Ortsnamen passt – sonst kein Bild. Im Detailplan stehen Urheber und Lizenz (Pflicht bei CC-Lizenzen). An Wikipedia gehen nur die Koordinaten des Ziels, nie dein Standort. Ergebnisse (auch «kein Bild») bleiben 30 Tage auf dem Gerät.
+- **GPS-Track:** Katalog-Routen (SAC, SchweizMobil) haben eine Routenlinie; die App lädt sie bei Bedarf von geo.admin.ch, zeichnet sie im Detailplan (Start = Kreis, Ziel = Dreieck) und bietet «GPX exportieren». Eine eigene GPX-Datei (Editor) hat Vorrang. Karten mit Track tragen den Hinweis «GPS-Track». Ohne Track wird nichts angezeigt.
+
 ### Kalender
 
 Der Kalender-Knopf (im Detailplan und in «Dein Plan») erzeugt einen Termin (.ics) von der Abfahrt bis zur Rückkehr mit Ort, Wetter, Risikohinweis, Zeitplan, Packliste und Navigationslink sowie zwei Erinnerungen: **am Vorabend um 18:00** («Vorabend-Check») und **30 min vor der Abfahrt**. Er bietet zwei Wege:
@@ -354,6 +360,8 @@ app/
 - **Lawinenrisiko:** Farben von [Skitourenguru](https://www.skitourenguru.ch), **manuell** eingetragen. Kein Scraping – die Nutzungsrechte sind nicht geklärt. Für einen späteren automatischen Anbieter gibt es das Interface `AvalancheRiskProvider`.
 - **Sonne & Mond:** lokal mit [suncalc](https://github.com/mourner/suncalc).
 - **Karten:** Links auf [map.geo.admin.ch](https://map.geo.admin.ch) (swisstopo).
+- **Bilder:** Wikipedia / Wikimedia Commons, Lizenz und Urheber pro Bild im Detailplan.
+- **Routenlinien:** geo.admin.ch (© swisstopo / SAC, ASTRA / SchweizMobil).
 - **Schrift:** Inter (SIL Open Font License), lokal eingebunden.
 
 ---

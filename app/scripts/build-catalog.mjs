@@ -3,7 +3,7 @@
 // Data: © swisstopo / SAC (Skirouten, Schneeschuhrouten), ASTRA / SchweizMobil (Schneeschuhwanderwege).
 // Open data (OGD); the source reference is mandatory and shown in the app.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LAYERS, astraTrailToEntry, endpoints, sacRouteToEntry } from './catalog-lib.mjs';
@@ -27,32 +27,58 @@ async function getJson(url, tries = 4) {
   }
 }
 
+async function identify(layer, box) {
+  const q = new URLSearchParams({
+    geometryType: 'esriGeometryEnvelope',
+    geometry: box.join(','),
+    imageDisplay: '1000,1000,96',
+    mapExtent: box.join(','),
+    tolerance: '0',
+    layers: `all:${layer}`,
+    returnGeometry: 'true',
+    geometryFormat: 'geojson',
+    sr: '2056',
+    lang: 'de',
+    limit: String(PAGE),
+  });
+  const j = await getJson(`${API}/api/MapServer/identify?${q}`);
+  return j.results ?? [];
+}
+
+/**
+ * All features of a layer. Paging with `offset` is not stable (the API does not sort), so the
+ * area is split into tiles; a full tile (= PAGE results) is split again into four.
+ */
 async function allFeatures(layer) {
   const out = new Map();
-  for (let offset = 0; ; offset += PAGE) {
-    const q = new URLSearchParams({
-      geometryType: 'esriGeometryEnvelope',
-      geometry: BBOX.join(','),
-      imageDisplay: '1000,1000,96',
-      mapExtent: BBOX.join(','),
-      tolerance: '0',
-      layers: `all:${layer}`,
-      returnGeometry: 'true',
-      geometryFormat: 'geojson',
-      sr: '2056',
-      lang: 'de',
-      limit: String(PAGE),
-      offset: String(offset),
-    });
-    const j = await getJson(`${API}/api/MapServer/identify?${q}`);
-    const results = j.results ?? [];
+  let requests = 0;
+  const visit = async (box) => {
+    const results = await identify(layer, box);
+    requests++;
+    const [x0, y0, x1, y1] = box;
+    if (results.length >= PAGE && x1 - x0 > 1000) {
+      const mx = (x0 + x1) / 2;
+      const my = (y0 + y1) / 2;
+      for (const b of [
+        [x0, y0, mx, my],
+        [mx, y0, x1, my],
+        [x0, my, mx, y1],
+        [mx, my, x1, y1],
+      ])
+        await visit(b);
+      return;
+    }
     for (const f of results) {
       const a = f.properties ?? f.attributes ?? {};
       if (a.target_name || a.namer) out.set(String(f.id ?? f.featureId), f);
     }
-    process.stdout.write(`\r${layer}: ${offset + results.length} Features, ${out.size} mit Namen`);
-    if (results.length < PAGE) break;
-  }
+    process.stdout.write(`\r${layer}: ${requests} Abfragen, ${out.size} mit Namen`);
+  };
+  // Start with a 4 × 3 grid over the area.
+  const [X0, Y0, X1, Y1] = BBOX;
+  const dx = (X1 - X0) / 4;
+  const dy = (Y1 - Y0) / 3;
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 3; k++) await visit([X0 + i * dx, Y0 + k * dy, X0 + (i + 1) * dx, Y0 + (k + 1) * dy]);
   process.stdout.write('\n');
   return [...out.values()];
 }
@@ -114,6 +140,15 @@ for (const [layer, kind] of [
 
 // Same route via two features (e.g. split lines): keep one per id.
 const unique = [...new Map(entries.map((e) => [e.id, e])).values()].sort((a, b) => a.id.localeCompare(b.id));
+
+// Safety net for the automatic monthly update: a much smaller result means an incomplete download.
+if (existsSync(OUT)) {
+  const old = JSON.parse(readFileSync(OUT, 'utf8')).entries?.length ?? 0;
+  if (unique.length < old * 0.95) {
+    console.error(`Nur ${unique.length} statt bisher ${old} Einträge – Download vermutlich unvollständig, alter Katalog bleibt.`);
+    process.exit(1);
+  }
+}
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(
   OUT,

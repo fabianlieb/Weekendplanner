@@ -73,3 +73,39 @@ export function StarIcon({ size = 22, filled = false }: { size?: number; filled?
     </svg>
   );
 }
+
+/** One line icon per sport (piste skiing, ski tour, snowshoe, photo). */
+export function SportIcon({ activity, size = 18 }: { activity: 'ski' | 'ski_tour' | 'snowshoe' | 'photo'; size?: number }) {
+  const label = { ski: 'Ski (Piste)', ski_tour: 'Skitour', snowshoe: 'Schneeschuh', photo: 'Fotografie' }[activity];
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" role="img" aria-label={label} className="sport-icon">
+      {activity === 'ski' && (
+        <>
+          <circle cx="15.5" cy="4.5" r="1.8" />
+          <path d="M14.5 7.5 10 12l3.5 2.5-2 4" />
+          <path d="M3 15.5l17 6" />
+          <path d="M6 8.5l4 3.5" />
+        </>
+      )}
+      {activity === 'ski_tour' && (
+        <>
+          <path d="M2 20 11 5l11 15" />
+          <path d="M7.5 18.5 12 16.5 9 13.5l4-2-2.5-2.5" strokeDasharray="1.5 2" />
+        </>
+      )}
+      {activity === 'snowshoe' && (
+        <>
+          <ellipse cx="12" cy="12" rx="5" ry="9" />
+          <path d="M8 8.5h8M7.3 12h9.4M8 15.5h8" />
+          <path d="M12 3v18" />
+        </>
+      )}
+      {activity === 'photo' && (
+        <>
+          <path d="M3 8h4l1.5-2.5h7L17 8h4v11H3z" />
+          <circle cx="12" cy="13.5" r="3.5" />
+        </>
+      )}
+    </svg>
+  );
+}

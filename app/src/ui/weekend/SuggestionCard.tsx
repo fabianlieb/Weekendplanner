@@ -4,6 +4,9 @@ import { DAY_LABEL, DAY_SHORT } from '../../engine/texts';
 import { RiskBadge } from '../components';
 import { formatDuration, weatherLine } from '../format';
 import { navigate } from '../router';
+import { SportIcon } from '../icons';
+import { Thumb, usePlaceMedia } from '../media';
+import { hasTrack } from '../../data/tracks';
 
 function riskShort(r: RiskInfo): string | undefined {
   if (!r.applies) return undefined;
@@ -29,6 +32,7 @@ export function SuggestionCard({
   /** false: not clickable (e.g. an alternative not yet stored). */
   linked?: boolean;
 }) {
+  const { candidate, image } = usePlaceMedia(s.candidateId);
   const meta = [travelText(s)];
   if (s.photo) meta.push(`Foto ${s.photo.spotName} ${formatTime(s.photo.time)}`);
   if (s.priceChf !== undefined) meta.push(`CHF ${s.priceChf}`);
@@ -38,14 +42,21 @@ export function SuggestionCard({
 
   const body = (
     <>
-      <span className="card-top">
-        <span className="card-title">{s.candidateName}</span>
-        {badge && <RiskBadge {...(s.risk.color ? { color: s.risk.color } : {})} text={badge} />}
-      </span>
-      <span className="card-sub">
-        {planB && <span className="tag planb">Plan B</span>}
-        {planB ? DAY_SHORT[s.day] : DAY_LABEL[s.day]} · {s.activityLabel}
-        {!planB && s.isNew && <span className="accent"> · neu</span>}
+      <span className="card-head">
+        <span className="card-head-text">
+          <span className="card-top">
+            <span className="card-title">{s.candidateName}</span>
+            {badge && <RiskBadge {...(s.risk.color ? { color: s.risk.color } : {})} text={badge} />}
+          </span>
+          <span className="card-sub">
+            <SportIcon activity={s.activity} />
+            {planB && <span className="tag planb">Plan B</span>}
+            {planB ? DAY_SHORT[s.day] : DAY_LABEL[s.day]} · {s.activityLabel}
+            {!planB && s.isNew && <span className="accent"> · neu</span>}
+            {hasTrack(candidate) && <span className="tag gps">GPS-Track</span>}
+          </span>
+        </span>
+        <Thumb image={image} />
       </span>
       {s.weather && <span className="card-weather">{weatherLine(s.weather, s.activity, s.slot)}</span>}
       <span className="card-text">{reason ? `Statt ${insteadOf}, ${reason}.` : s.reasons.join(' ')}</span>

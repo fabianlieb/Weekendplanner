@@ -1033,3 +1033,69 @@ span.list-main {
   flex-direction: column;
   gap: 2px;
 }
+
+.sport-icon {
+  flex: none;
+  color: var(--ink);
+}
+
+.overline-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overline-row .sport-icon {
+  color: var(--accent);
+}
+
+/* --- Pictures and tracks -------------------------------------------------------- */
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+img.thumb {
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--hair);
+  background: var(--soft);
+}
+
+.tag.gps {
+  font-weight: 500;
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.place-picture {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.place-picture img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+  border: 1px solid var(--hair);
+  background: var(--soft);
+}
+
+.track-map {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--hair);
+  background: var(--soft);
+}

@@ -133,6 +133,8 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
   const gpx = optional(v, 'gpx', isStr, path, e, 'muss Text sein');
   const photoSpotIds = optional(v, 'photoSpotIds', isStrArray, path, e, 'muss eine Liste von IDs sein');
   const packing = optional(v, 'packing', isStrArray, path, e, 'muss eine Liste von Texten sein');
+  const track =
+    isObj(v.track) && isStr(v.track.layer) && isStr(v.track.featureId) ? { layer: v.track.layer, featureId: v.track.featureId } : undefined;
   let parking: { lat: number; lon: number } | undefined;
   if (v.parking !== undefined && v.parking !== null) {
     if (isObj(v.parking) && isNum(v.parking.lat, -90, 90) && isNum(v.parking.lon, -180, 180)) parking = { lat: v.parking.lat, lon: v.parking.lon };
@@ -163,6 +165,7 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
     ...(gpx !== undefined ? { gpx } : {}),
     ...(photoSpotIds !== undefined ? { photoSpotIds } : {}),
     ...(parking ? { parking } : {}),
+    ...(track ? { track } : {}),
     ...(packing?.length ? { packing } : {}),
     ...(favorite ? { favorite } : {}),
   };

@@ -6,8 +6,9 @@ import { addDays, formatTime } from '../../engine/util';
 import { RiskBadge } from '../components';
 import { dayWithDate, weatherLine } from '../format';
 import { googleMapsUrl, navigationTarget } from '../geo';
-import { NavigateIcon } from '../icons';
+import { NavigateIcon, SportIcon } from '../icons';
 import { CalendarButton } from './CalendarButton';
+import { Thumb, usePlaceMedia } from '../media';
 import { ShareButton } from './ShareButton';
 import { navigate } from '../router';
 
@@ -27,6 +28,7 @@ export function PlanCard({
   today: string;
   hour: number;
 }) {
+  const { image } = usePlaceMedia(chosen.candidateId);
   const departure = chosen.schedule[0];
   const back = chosen.schedule.at(-1);
   const isToday = chosen.date === today;
@@ -44,9 +46,14 @@ export function PlanCard({
         <span className="overline">{isToday ? 'Heute' : isTomorrow ? 'Morgen' : 'Dein Plan'} · {dayWithDate(chosen.day, chosen.date)}</span>
         {chosen.risk.applies && <RiskBadge {...(chosen.risk.color ? { color: chosen.risk.color } : {})} {...(badge ? { text: badge } : {})} />}
       </div>
-      <button type="button" className="plan-title" onClick={() => navigate('detail', { id: chosen.id })}>
-        <span className="card-title">{chosen.candidateName}</span>
-        <span className="card-sub">{chosen.activityLabel}</span>
+      <button type="button" className="plan-title card-head" onClick={() => navigate('detail', { id: chosen.id })}>
+        <span className="card-head-text">
+          <span className="card-title">{chosen.candidateName}</span>
+          <span className="card-sub">
+            <SportIcon activity={chosen.activity} /> {chosen.activityLabel}
+          </span>
+        </span>
+        <Thumb image={image} size={72} />
       </button>
       {chosen.weather && <span className="card-weather">{weatherLine(chosen.weather, chosen.activity, chosen.slot)}</span>}
       {departure && back && (
