@@ -263,7 +263,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
             <span className="small grow">
               {awaiting.length ? (
                 <>
-                  <strong>{awaiting.length === 1 ? '1 passende Tour wartet' : `${awaiting.length} passende Touren warten`}</strong> auf die Skitourenguru-Farbe von heute
+                  <strong>{awaiting.length === 1 ? '1 passende Tour wartet' : `${awaiting.length} passende Touren warten`}</strong> auf eine Risikofarbe von heute (ohne Berechnung: Skitourenguru-Farbe eintragen)
                 </>
               ) : (
                 <>

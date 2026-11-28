@@ -11,7 +11,11 @@ import {
   freshnessNote,
   riskLabel,
   slfDangerLabel,
+  grmLabel,
+  GRM_HINT,
+  RISK_COLOR_LABEL,
 } from './texts';
+import { GRM_AREA, GRM_SOURCE, worse, type GrmResult } from './grm';
 import type { Candidate, IsoDate, RiskColor, RiskEntry, RiskInfo, RiskLevel, RiskStatus } from './types';
 import { validForDate, type SlfDanger } from './slf';
 
@@ -49,7 +53,19 @@ export function latestEntry(candidateId: string, entries: readonly RiskEntry[]):
  * Fail closed: an entry is only valid on the day it was made (`today`).
  * Missing or older entries mean «unknown». Entries dated in the future are invalid too.
  */
-export function resolveRisk(c: Candidate, entries: readonly RiskEntry[], today: IsoDate): RiskStatus {
+export function resolveRisk(c: Candidate, entries: readonly RiskEntry[], today: IsoDate, computed?: RiskEntry): RiskStatus {
+  const manual = manualStatus(c, entries, today);
+  // The own calculation (GRM) only counts for today and with a valid colour.
+  const calc = computed && computed.date === today && isValidColor(computed.color) && needsAvalancheRating(c) ? computed : undefined;
+  if (!calc) return manual;
+  if (manual.kind !== 'known') return { kind: 'known', entry: calc };
+  // Both: the more cautious colour counts; the other one is shown as well.
+  return worse(manual.entry.color, calc.color) === calc.color && calc.color !== manual.entry.color
+    ? { kind: 'known', entry: calc, other: manual.entry }
+    : { kind: 'known', entry: manual.entry, other: calc };
+}
+
+function manualStatus(c: Candidate, entries: readonly RiskEntry[], today: IsoDate): RiskStatus {
   const entry = latestEntry(c.id, entries);
   if (!needsAvalancheRating(c)) {
     // A fresh entry for a signposted trail is still honoured (stricter, never looser).
@@ -96,6 +112,7 @@ export function buildRiskInfo(c: Candidate, status: RiskStatus, planDate: IsoDat
   const validForPlan = validForDate(slf, planDate);
   return {
     ...info,
+    ...(info.source === 'grm' && validForPlan ? { freshnessNote: '' } : {}),
     dangerLabel: slfDangerLabel(slf.level, slf.subdivision, slf.regionName, validForPlan),
     slf: { level: slf.level, ...(slf.subdivision ? { subdivision: slf.subdivision } : {}), regionName: slf.regionName, validTo: slf.validTo, validForPlan },
   };
@@ -104,16 +121,27 @@ export function buildRiskInfo(c: Candidate, status: RiskStatus, planDate: IsoDat
 function buildRiskInfoBase(status: RiskStatus, planDate: IsoDate, applies: boolean, signposted: boolean): RiskInfo {
   if (status.kind === 'known') {
     const { color, dangerLevel, date } = status.entry;
+    const isGrm = status.entry.source === GRM_SOURCE;
+    const grm = (e: RiskEntry | undefined) => (e as (RiskEntry & { grm?: GrmResult }) | undefined)?.grm;
+    const details = grm(status.entry) ?? grm(status.other);
+    const other = status.other;
     return {
       applies,
       signposted,
       color,
       ...(dangerLevel ? { dangerLevel } : {}),
       entryDate: date,
-      label: riskLabel(color),
+      source: isGrm ? 'grm' : 'manual',
+      label: isGrm ? grmLabel(color) : riskLabel(color),
       dangerLabel: dangerLabel(dangerLevel),
-      bulletinHint: BULLETIN_HINT,
+      bulletinHint: isGrm ? `${GRM_HINT} ${BULLETIN_HINT}` : BULLETIN_HINT,
       ...(color === 'red' ? { groupNote: RISK_GROUP_NOTE } : {}),
+      ...(details ? { grmNote: `Steilste Stelle ${GRM_AREA[details.area]}: ${details.slopeText}` } : {}),
+      ...(other && other.color !== color
+        ? {
+            bothNote: `${isGrm ? 'Skitourenguru' : 'Berechnung'}: ${RISK_COLOR_LABEL[other.color]} – die vorsichtigere Farbe gilt.`,
+          }
+        : {}),
       freshnessNote: freshnessNote(date, planDate),
     };
   }

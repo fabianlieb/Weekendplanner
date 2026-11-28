@@ -219,7 +219,7 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
   // places that can be suggested (best first) and evaluate again.
   const preferences = await loadPreferences(db, feedback, weekendKey(today));
   const snow = snowByCandidate(pool, await loadSnow(db, opts.snowFetch), today);
-  const slf = slfByCandidate(pool, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
+  const slf = slfByCandidate(pool, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }), now);
   const likely =
     startPoint?.mode === 'transit'
       ? evaluateOptions({ profile, input, candidates: pool, riskEntries, weather, today, feedback, preferences, snow, slf })
@@ -319,7 +319,7 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
   const snow = snowByCandidate(candidates, await loadSnow(db, opts.snowFetch), today);
-  const slf = slfByCandidate(candidates, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
+  const slf = slfByCandidate(candidates, await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }), now);
   const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback, preferences, snow, slf };
   const planB = plan.planB && plan.planB.id !== chosen.id ? plan.planB : undefined;
   // On the day itself (morning check) an alternative must still be reachable from now on.
@@ -403,7 +403,7 @@ export async function explainCandidate(db: PlannerDB, candidateId: string, opts:
   const { weather } = await loadWeather(db, [candidate], { ...opts, now });
   const preferences = await loadPreferences(db, feedback, plan.weekend);
   const snow = snowByCandidate([candidate], await loadSnow(db, opts.snowFetch), today);
-  const slf = slfByCandidate([candidate], await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }));
+  const slf = slfByCandidate([candidate], await loadSlf(db, { now, ...(opts.slfFetch ? { fetchFn: opts.slfFetch } : {}) }), now);
   const ev = evaluateOptions({ profile, input: plan.input, candidates: [candidate], riskEntries, weather, today, feedback, preferences, snow, slf });
   const scores = [...plan.suggestions].map((s) => s.score);
   return {

@@ -21,6 +21,7 @@ interface RouteEntry {
   link?: string;
   source: string;
   track?: { layer: string; featureId: string };
+  steep?: [number, number, number];
 }
 
 let cached: Promise<Candidate[]> | undefined;

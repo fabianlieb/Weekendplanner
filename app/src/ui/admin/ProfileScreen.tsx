@@ -172,7 +172,8 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
           );
         })}
         <span className="tiny muted">
-          Die Stufe begrenzt, welche Skitourenguru-Farben vorgeschlagen werden; die Farbe selbst trägst du tagesaktuell auf dem Wochenende-Screen ein. Die
+          Die Stufe begrenzt, welche Risikofarben vorgeschlagen werden. Die Farbe berechnet die App aus SLF-Bulletin und Steilheit der Route (GRM); eine
+          eingetragene Skitourenguru-Farbe zählt zusätzlich, die vorsichtigere gilt. Die
           Schwierigkeit begrenzt die Routen aus dem Katalog (SAC-Skala L · WS · ZS · S; Schneeschuh leicht · mittel · schwer).
         </span>
       </Section>

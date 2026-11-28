@@ -41,6 +41,10 @@ jobs:
         # On failure the committed catalogue snapshot is used.
         continue-on-error: true
         run: node scripts/build-catalog.mjs
+      - name: Steepness for new routes (own risk calculation)
+        if: github.event.schedule == '0 4 1 * *' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: node scripts/build-steepness.mjs
       - name: Build
         run: npm run build
         env:

@@ -128,6 +128,7 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
   const favorite = optional(v, 'favorite', isBool, path, e, 'muss true/false sein');
   const active = optional(v, 'active', isBool, path, e, 'muss true/false sein');
   const region = optional(v, 'region', isStr, path, e, 'muss Text sein');
+  const difficulty = optional(v, 'difficulty', isStr, path, e, 'muss Text sein (SAC-Grad, z. B. WS+ oder WT3)');
   const note = optional(v, 'note', isStr, path, e, 'muss Text sein');
   const link = optional(v, 'link', isStr, path, e, 'muss Text sein');
   const gpx = optional(v, 'gpx', isStr, path, e, 'muss Text sein');
@@ -135,6 +136,10 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
   const packing = optional(v, 'packing', isStrArray, path, e, 'muss eine Liste von Texten sein');
   const track =
     isObj(v.track) && isStr(v.track.layer) && isStr(v.track.featureId) ? { layer: v.track.layer, featureId: v.track.featureId } : undefined;
+  const steep =
+    Array.isArray(v.steep) && v.steep.length === 3 && v.steep.every((x) => Number.isInteger(x) && (x as number) >= 0 && (x as number) <= 5)
+      ? (v.steep as [number, number, number])
+      : undefined;
   let parking: { lat: number; lon: number } | undefined;
   if (v.parking !== undefined && v.parking !== null) {
     if (isObj(v.parking) && isNum(v.parking.lat, -90, 90) && isNum(v.parking.lon, -180, 180)) parking = { lat: v.parking.lat, lon: v.parking.lon };
@@ -155,6 +160,7 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
     done: done ?? false,
     active: active ?? true,
     ...(region !== undefined ? { region } : {}),
+    ...(difficulty !== undefined ? { difficulty } : {}),
     ...(elevationGain !== undefined ? { elevationGain } : {}),
     ...(approachMinutes !== undefined ? { approachMinutes } : {}),
     ...(signposted !== undefined ? { signposted } : {}),
@@ -166,6 +172,7 @@ export function validateCandidate(v: unknown, path: string, e: Errors = new Erro
     ...(photoSpotIds !== undefined ? { photoSpotIds } : {}),
     ...(parking ? { parking } : {}),
     ...(track ? { track } : {}),
+    ...(steep ? { steep } : {}),
     ...(packing?.length ? { packing } : {}),
     ...(favorite ? { favorite } : {}),
   };

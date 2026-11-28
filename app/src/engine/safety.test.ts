@@ -79,7 +79,7 @@ describe('rule 1 – never «sicher»', () => {
   });
 });
 
-describe('rule 2 – risk only from Skitourenguru colours', () => {
+describe('rule 2 – risk from Skitourenguru colours (own GRM calculation: grm.test.ts)', () => {
   it('without an entry, a tour has no colour and is not suggested, whatever the weather', () => {
     for (const t of tours) {
       const r = onlyTour(t.id, []);

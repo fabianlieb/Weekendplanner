@@ -36,7 +36,7 @@ export function RadarList({ hits, hasFavorites }: { hits: RadarHit[] | undefined
           ))}
         </div>
       )}
-      <span className="tiny muted">Touren im Lawinengelände erscheinen hier nicht – sie brauchen die Skitourenguru-Farbe von heute.</span>
+      <span className="tiny muted">Touren im Lawinengelände erscheinen hier nicht – ihr Risiko kennt die App erst mit dem Bulletin des Tages.</span>
     </section>
   );
 }

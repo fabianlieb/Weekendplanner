@@ -132,6 +132,12 @@ export interface Candidate {
   packing?: string[];
   /** Parking for navigation (optional). Without it, navigation goes to the start / photo position. */
   parking?: { lat: number; lon: number };
+  /**
+   * Steepest slope class near the route (swisstopo «Hangneigung über 30°», 0 = under 30° … 5 = over 50°)
+   * for the GRM areas [track ±20 m, whole slope ±150 m, incl. runout ±300 m]; a class counts from a
+   * connected area of about 20 m × 20 m. Catalogue routes only.
+   */
+  steep?: [number, number, number];
   /** Photo spots: walking time from parking to the spot, one way, minutes. */
   approachMinutes?: number;
   /** Manual travel time per start point id, minutes (one way, by car). */
@@ -320,7 +326,7 @@ export interface ScheduleItem {
 export type RiskStatus =
   | { kind: 'not_required'; signposted: boolean }
   | { kind: 'unknown'; reason: 'missing' | 'stale' }
-  | { kind: 'known'; entry: RiskEntry };
+  | { kind: 'known'; entry: RiskEntry; other?: RiskEntry };
 
 export interface RiskInfo {
   /** True for activities in avalanche terrain (tours, unsignposted trails). */
@@ -339,6 +345,12 @@ export interface RiskInfo {
   freshnessNote: string;
   /** Official SLF danger level of the place's warning region (loaded automatically). */
   slf?: { level: DangerLevel; subdivision?: 'minus' | 'neutral' | 'plus'; regionName: string; validTo: string; validForPlan: boolean };
+  /** Where the colour comes from. */
+  source?: 'manual' | 'grm';
+  /** GRM details: «Steilste Stelle 35–40° im Bereich der Spur». */
+  grmNote?: string;
+  /** When both exist and differ: «Skitourenguru: grün · Berechnung: orange – die vorsichtigere Farbe gilt». */
+  bothNote?: string;
 }
 
 export interface PhotoAddOn {

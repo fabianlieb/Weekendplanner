@@ -1,4 +1,5 @@
-// Today's Skitourenguru colours, one tap per tour. Colours are only valid today (fail closed).
+// Today's Skitourenguru colours, one tap per tour (in addition to the own GRM calculation; the more
+// cautious colour counts). Colours are only valid today (fail closed).
 // Shown inline on the weekend screen; there is no separate risk page.
 import { getDb } from '../../data/db';
 import { clearRisk, riskEntriesOn, setRisk } from '../../data/repositories';
@@ -41,7 +42,7 @@ export function ColourEntry({ tours, onChange }: { tours: Candidate[]; onChange:
         <a href={LINKS.skitourenguru} target="_blank" rel="noreferrer">
           Skitourenguru
         </a>{' '}
-        antippen – gilt nur heute. {BULLETIN_HINT}{' '}
+        antippen – optional zur Berechnung der App, gilt nur heute; die vorsichtigere Farbe zählt. {BULLETIN_HINT}{' '}
         <a href={LINKS.slfBulletin} target="_blank" rel="noreferrer">
           SLF-Bulletin
         </a>

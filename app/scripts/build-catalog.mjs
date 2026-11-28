@@ -155,6 +155,12 @@ if (existsSync(OUT)) {
     process.exit(1);
   }
 }
+// Keep the slope classes already computed (scripts/build-steepness.mjs adds new routes).
+const STEEP = join(dirname(fileURLToPath(import.meta.url)), 'route-steepness.json');
+if (existsSync(STEEP)) {
+  const known = JSON.parse(readFileSync(STEEP, 'utf8')).classes ?? {};
+  for (const e of unique) if (e.track && known[gpxFileName(e.track)]) e.steep = known[gpxFileName(e.track)];
+}
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(
   OUT,

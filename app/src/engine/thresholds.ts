@@ -187,6 +187,23 @@ export const THRESHOLDS = {
   },
 
   // -------------------------------------------------------------------------
+  // Own avalanche risk calculation: GRM chart («Achtung Lawinen», KAT/SLF)
+  grm: {
+    /** Position of a subdivision inside its level on the chart axis (2− → 2.17, 2 → 2.5, 2+ → 2.83). */
+    subdivisionOffset: { minus: 1 / 6, neutral: 0.5, plus: 5 / 6 },
+    /** Green below this slope at the start of «gering», minus 5° per level (40/35/30/25°). */
+    greenAtLevel1: 40,
+    greenPerLevel: 5,
+    /** Red from 45° at level 1.87, about 5.6° lower per level (40° at 2.7, 35° at 3.6, 30° at 4.5). */
+    redAt: { level: 1.87, deg: 45 },
+    redPerLevel: 5.62,
+    /** Slope used per class of the swisstopo layer: under 30°, 30–35°, …, over 50°. */
+    classDegrees: [29, 32.5, 37.5, 42.5, 47.5, 52.5],
+    /** Whole slope (erheblich) and incl. runout (gross): SAC-grade steepness of the track + this (cautious). */
+    slopeMarginDeg: 5,
+  },
+
+  // -------------------------------------------------------------------------
   // Measured snow depth (SLF IMIS flat-field stations)
   snow: {
     /** Station within this distance (km) of the route. */

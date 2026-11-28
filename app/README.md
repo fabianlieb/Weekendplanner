@@ -211,13 +211,27 @@ In der Liste (Katalog-Ort oder eigener Eintrag) prüft **«Warum nicht vorgeschl
 Umgesetzt in [`src/engine/risk.ts`](src/engine/risk.ts) und abgesichert in [`src/engine/safety.test.ts`](src/engine/safety.test.ts):
 
 1. Die App schreibt **nie** «sicher» – ein Test durchsucht allen App-Code und alle erzeugten Texte.
-2. Das Lawinenrisiko kommt aus den Skitourenguru-Farben, die du einträgst. Eine eigene Risikoberechnung auf Basis des offiziellen SLF-Bulletins ist erlaubt (noch nicht eingebaut); kein Scraping. Die **SLF-Gefahrenstufe** der Warnregion lädt die App automatisch (Bulletin und Warnregionen von aws.slf.ch, offene Daten) und zeigt sie bei jeder Tour mit Gültigkeit an.
+2. Das Lawinenrisiko **berechnet die App selbst** nach der Grafischen Reduktionsmethode (siehe unten), auf Basis des offiziellen SLF-Bulletins und der Steilheit der Route (SAC-Schwierigkeit). Eine eingetragene Skitourenguru-Farbe zählt zusätzlich – **die vorsichtigere Farbe gilt**. Kein Scraping. Die **SLF-Gefahrenstufe** der Warnregion lädt die App automatisch (Bulletin und Warnregionen von aws.slf.ch, offene Daten) und zeigt sie bei jeder Tour mit Gültigkeit an.
 3. **Fail closed:** Ein Eintrag gilt nur **am Tag, an dem er gemacht wurde**. Fehlt die Farbe von heute (Skitour oder nicht signalisierter Schneeschuh-Trail), gilt das Risiko als unbekannt – keine Vorschläge, kein Plan B, und der Vorabend-Check wechselt auf Plan B.
 4. Filter nach dem Niveau pro Sportart im Profil (Skitour und Schneeschuh je Stufe 1–3): 1 → nur grün · 2 → grün und orange · 3 → zusätzlich rot. Sportarten, die du im Profil ausschaltest, werden nie vorgeschlagen.
 5. Rot nur bei Stufe 3 **und** Bestätigung «Du bist in einer geschulten Gruppe?» (wird jedes Wochenende neu gefragt, nie gespeichert). Hinweis: «nur in Gruppen mit geschulten Leuten, nie allein».
 6. Jede Tour zeigt Risikofarbe (immer mit Text), Gefahrenstufe und den Hinweis aufs SLF-Bulletin.
 
-Ein Fuzz-Test prüft 300 zufällige Kombinationen aus Farben, Daten und Stufen.
+Ein Fuzz-Test prüft 300 zufällige Kombinationen aus Farben, Daten und Stufen, ein zweiter 150 Kombinationen aus Gefahrenstufe, Unterstufe, Steilheit und Profil ([`src/engine/grm.test.ts`](src/engine/grm.test.ts)).
+
+### Eigene Risikoberechnung (GRM)
+
+Grundlage ist die **Grafische Reduktionsmethode** aus dem Merkblatt «Achtung Lawinen» (Kernausbildungsteam Lawinen / SLF): Gefahrenstufe × steilste Stelle (ca. 20 m × 20 m) im massgebenden Hangbereich → grün («tiefe Gefahr»), orange («erhöhte Gefahr – Vorsicht, Erfahrung») oder rot («hohe Gefahr – Verzicht empfohlen»).
+
+- **Gefahrenstufe:** aus dem aktuellen SLF-Bulletin der Warnregion, mit Unterstufe (2− · 2 · 2+ liegen bei 2,17 · 2,5 · 2,83 auf der Achse). Stufe 5 ist immer rot.
+- **Steilheit im Bereich der Spur** (gering, mässig): aus der **SAC-Schwierigkeit**, die genau über die steilste Stelle definiert ist – Ski: L bis 30°, WS ab 30°, ZS ab 35°, S ab 40°, SS ab 45°; Schneeschuh: WT1/WT2 unter 25°, WT3 unter 30°, WT4 bis 30°, WT5 unter 35°, WT6 über 35°. Die App nimmt jeweils das **obere Ende** des Bereichs (z. B. ZS → 38°, ZS+ → 40°). Ohne SAC-Grad zählt die Geländemessung.
+- **Steilheit im ganzen Hang** (erheblich) und **inkl. Auslauf** (gross): SAC-Wert der Spur **+ 5°**, weil der ganze Hang meist steiler ist als die Spur (vorsichtige Annahme).
+- **Geländemessung nur als Ersatz:** Für Routen ohne SAC-Grad wertet der Build die swisstopo-Karte «Hangneigung über 30°» (10-m-Modell) aus (`scripts/build-steepness.mjs`): Spur ±20 m (nur Flächen, welche die Route durchquert), Hang ±150 m und Auslauf ±300 m (nur Flächen, die mit dem Spurbereich zusammenhängen, ohne Fels über 50°), jeweils ab einer zusammenhängenden Fläche von etwa 20 m × 20 m. Ein Abgleich mit den SAC-Graden zeigte, dass diese Messung im alpinen Gelände meist 1–2 Klassen zu steil misst (Gipfelaufbauten, Grate, Felsstufen, die das Modell nicht von Schnee unterscheidet) – deshalb hat der SAC-Grad Vorrang.
+- **Verteilung über den Katalog** (3'143 Touren, Stand Ende November 2026): gering 72 % grün / 28 % orange · mässig 29 % grün / 64 % orange / 7 % rot · erheblich 21 % orange / 79 % rot · gross 95 % rot.
+- **Grenzen** (aus der offiziellen Grafik gelesen): grün unter 40° bei Stufe 1,0, je Stufe 5° tiefer (35° bei 2,0 · 30° bei 3,0); rot ab 45° bei Stufe 1,87, je Stufe etwa 5,6° tiefer (40° bei 2,7 · 35° bei 3,6 · 30° bei 4,5). Pro Geländeklasse (Ersatzmessung) rechnet die App mit der Mitte (z. B. 37,5° für 35–40°), «unter 30°» mit 29°.
+- **Vorsichtig:** keine Erleichterung für günstige Expositionen oder Höhenlagen; ohne gültiges Bulletin oder ohne Steilheit keine Farbe (fail closed); eine eingetragene Skitourenguru-Farbe kann eine berechnete nie verbessern. Eigene Orte ohne Katalogroute: mit SAC-Grad bei gering und mässig berechnet, ab erheblich nur mit eingetragener Farbe.
+- **Zeit:** Am Donnerstag gilt das Bulletin von heute mit «am Vorabend neu prüfen»; der Vorabend-Check verlangt ein Bulletin, das den Tag des Plans abdeckt (erscheint um 17:00 am Vortag).
+- Die Berechnung ist eine Planungshilfe und ersetzt die Beurteilung vor Ort nicht.
 
 ---
 
@@ -266,6 +280,7 @@ Entweder ein Array `[ … ]` oder ein Objekt `{ "candidates": [ … ] }`:
 | `name` | ja | Name |
 | `kind` | ja | `ski_resort` · `ski_tour` · `snowshoe_trail` · `photo_spot` |
 | `region` | nein | Text |
+| `difficulty` | nein | SAC-Grad, z. B. `WS+` (Ski) oder `WT3` (Schneeschuh) – Grundlage der eigenen Risikoberechnung |
 | `valley` | ja | `{ lat, lon, elevation }` – Talstation, Startpunkt, Trailstart; bei Fotospots der **Talpunkt** für die Nebelmeer-Erkennung (tief im Tal davor) |
 | `summit` | ja | `{ lat, lon, elevation }` – Bergstation, Gipfel, höchster Punkt bzw. **Fotostandort** |
 | `elevationGain` | bei Touren/Trails | Höhenmeter |
@@ -343,6 +358,7 @@ Alle Grenzwerte stehen in **einer** Datei: [`src/engine/thresholds.ts`](src/engi
 | `scoring.minConditionScore` | Mindestnote Bedingungen | 35 |
 | `selection.targetNew` | neue Optionen pro Wochenende | 1 |
 | `travelEstimate.*` | Anreise-Schätzung aus der Luftlinie | Auto: Faktor 1.3, 70 km/h, +10 min · ÖV: Faktor 1.4, 40 km/h, +30 min |
+| `grm.*` | eigene Risikoberechnung | grün unter 40° − 5°/Stufe · rot ab 45° bei 1,87 − 5,6°/Stufe · Unterstufen 1/6 · 1/2 · 5/6 · ganzer Hang SAC-Wert + 5° |
 | `snow.*` | gemessene Schneehöhe | Station ≤ 12 km, Höhenband Start − 200 m bis Gipfel + 300 m, ≤ 2 Tage alt · min. 40 cm Skitour, 30 cm Schneeschuh |
 | `routing.*` | berechnete Anreise | Auto × 1.1 + 10 min · Fussweg 4 km/h · max. 60 min zur Haltestelle · erste Abfahrt ÖV 05:30 · 120 Fahrplan-Abfragen pro Berechnung |
 | `photoAddOn.radiusKm` | automatische Fotospots im Umkreis | 10 km |
@@ -380,6 +396,8 @@ app/
 ## Datenquellen und Lizenzen
 
 - **Anreise:** Fahrzeiten vom öffentlichen Routenserver [OSRM](https://project-osrm.org/) (Kartendaten © OpenStreetMap-Mitwirkende), ÖV-Fahrplan von [transport.opendata.ch](https://transport.opendata.ch/). Gesendet werden nur der auf ~1 km gerundete Startpunkt und die Koordinaten der Orte; die Ergebnisse bleiben im Gerät (Auto 90 Tage, ÖV 30 Tage).
+- **Lawinenbulletin:** [SLF](https://www.slf.ch) Bulletin (CAAML) und Warnregionen über aws.slf.ch, offene Daten – Quellenangabe «Lawinenbulletin: SLF».
+- **Hangneigung:** swisstopo «Hangneigung über 30°» (Geobasisdatensatz 41.6), WMTS.
 - **Schnee:** [SLF](https://www.slf.ch) Messnetz IMIS (Schneehöhe, Neuschnee), SLF Data Service, CC BY 4.0 – Quellenangabe «Schneedaten: SLF (IMIS)» mit Link auf jeder Seite.
 - **Wetter:** [Open-Meteo](https://open-meteo.com/) – *Weather data by Open-Meteo.com*, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), nicht kommerziell. Modell `meteoswiss_icon_seamless` (MeteoSchweiz ICON-CH1/CH2, ca. 5 Tage), stundenweise ergänzt durch `best_match` (global). Sichtweite stammt immer aus dem globalen Modell (ICON-CH liefert keine). Die Quellenangabe ist auf jedem Screen sichtbar.
 - **Lawinenrisiko:** Farben von [Skitourenguru](https://www.skitourenguru.ch), **manuell** eingetragen. Kein Scraping – die Nutzungsrechte sind nicht geklärt. Für einen späteren automatischen Anbieter gibt es das Interface `AvalancheRiskProvider`.

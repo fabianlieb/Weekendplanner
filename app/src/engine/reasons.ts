@@ -51,7 +51,11 @@ export function buildReasons(input: {
   const sentences: string[] = [];
 
   if (risk.applies && risk.color) {
-    sentences.push(`${({ green: REASON.greenRisk, orange: REASON.orangeRisk, red: REASON.redRisk } as const)[risk.color]}.`);
+    sentences.push(
+      risk.source === 'grm'
+        ? `${REASON.grmRisk(({ green: 'grün', orange: 'orange', red: 'rot' } as const)[risk.color])}.`
+        : `${({ green: REASON.greenRisk, orange: REASON.orangeRisk, red: REASON.redRisk } as const)[risk.color]}.`,
+    );
   } else if (risk.applies && risk.signposted) {
     sentences.push(`${REASON.signposted}.`);
   }

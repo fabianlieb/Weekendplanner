@@ -128,7 +128,7 @@ export function CheckView() {
       </span>
       {riskMissing && (
         <Notice tone="warn">
-          Trage die Skitourenguru-Farben von heute ein, dann prüfe neu. Ohne aktuelle Farbe bleibt die Tour gesperrt.
+          Ohne Risikofarbe von heute bleibt die Tour gesperrt. Prüfe neu, sobald das SLF-Bulletin geladen ist, oder trage die Skitourenguru-Farbe von heute ein.
           <div className="row" style={{ marginTop: 10 }}>
             <button type="button" className="btn" onClick={() => navigate('thursday', { colours: '1' })}>
               Farben eintragen

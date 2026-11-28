@@ -19,8 +19,8 @@ export function formatClock(iso: string): string {
 }
 
 export const EXCLUSION_LABEL: Partial<Record<ExclusionReason, string>> = {
-  risk_unknown: 'ohne Skitourenguru-Farbe von heute',
-  risk_stale: 'ohne Skitourenguru-Farbe von heute',
+  risk_unknown: 'ohne Risikofarbe von heute',
+  risk_stale: 'ohne Risikofarbe von heute',
   risk_above_level: 'Risiko über deiner Stufe',
   risk_red_unconfirmed: 'rot ohne Bestätigung',
   equipment_missing: 'Material fehlt',

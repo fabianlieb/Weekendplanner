@@ -29,6 +29,7 @@ interface Draft {
   done: boolean;
   active: boolean;
   note: string;
+  difficulty: string;
   link: string;
   photoSpotIds: string[];
   gpx?: string;
@@ -69,6 +70,7 @@ function toDraft(c: Candidate | undefined, kind: CandidateKind): Draft {
     done: c?.done ?? false,
     active: c?.active ?? true,
     note: c?.note ?? '',
+    difficulty: c?.difficulty ?? '',
     link: c?.link ?? '',
     photoSpotIds: c?.photoSpotIds ?? [],
     ...(c?.gpx ? { gpx: c.gpx } : {}),
@@ -101,6 +103,7 @@ function fromDraft(d: Draft): Record<string, unknown> {
     active: d.active,
     ...opt('region', d.region.trim()),
     ...opt('elevationGain', num(d.elevationGain), isTour),
+    ...opt('difficulty', d.difficulty.trim(), isTour),
     ...opt('approachMinutes', num(d.approachMinutes), d.kind === 'photo_spot'),
     ...opt('signposted', d.signposted, d.kind === 'snowshoe_trail'),
     ...opt('eveningPossible', d.eveningPossible, isTour),
@@ -221,6 +224,17 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
               <input id="c-gain" className="input" inputMode="numeric" value={d.elevationGain} onChange={(e) => set({ elevationGain: e.target.value })} />
             </Field>
           )}
+          {isTour && (
+            <Field label={d.kind === 'ski_tour' ? 'SAC-Grad (L, WS, ZS …)' : 'SAC-Grad (WT1–WT6)'} htmlFor="c-diff">
+              <input
+                id="c-diff"
+                className="input"
+                value={d.difficulty}
+                placeholder={d.kind === 'ski_tour' ? 'z. B. WS+' : 'z. B. WT3'}
+                onChange={(e) => set({ difficulty: e.target.value })}
+              />
+            </Field>
+          )}
           <Field label={d.kind === 'ski_resort' ? 'Skitag (h)' : d.kind === 'photo_spot' ? 'Mind. Zeit vor Ort (h)' : 'Dauer total (h)'} htmlFor="c-dur">
             <input id="c-dur" className="input" inputMode="decimal" value={d.durationHours} onChange={(e) => set({ durationHours: e.target.value })} />
           </Field>
@@ -242,7 +256,10 @@ export function CandidateEditor({ id, kind }: { id?: string; kind?: string }) {
           </label>
         )}
         {d.kind === 'snowshoe_trail' && !d.signposted && (
-          <span className="tiny muted">Nicht signalisiert: wird nur mit aktueller Skitourenguru-Farbe vorgeschlagen und braucht ein LVS-Set.</span>
+          <span className="tiny muted">
+            Nicht signalisiert: braucht ein LVS-Set und eine Risikofarbe von heute – berechnet aus Bulletin und SAC-Grad (Feld «SAC-Grad», z. B. WT3)
+            oder als Skitourenguru-Farbe eingetragen.
+          </span>
         )}
         {isTour && (
           <label className="check">

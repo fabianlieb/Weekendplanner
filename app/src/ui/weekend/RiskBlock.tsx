@@ -12,6 +12,8 @@ export function RiskBlock({ risk }: { risk: RiskInfo }) {
         <RiskBadge {...(risk.color ? { color: risk.color } : {})} text={risk.color ? undefined : risk.signposted ? 'signalisiert' : 'unbekannt'} />
         <strong className="small grow">{risk.label}</strong>
       </div>
+      {risk.bothNote && <span className="small">{risk.bothNote}</span>}
+      {risk.grmNote && <span className="small">{risk.grmNote}</span>}
       <span className="small">{risk.dangerLabel}</span>
       {risk.slf && <span className="tiny muted">Automatisch geladen · gültig bis {formatClock(risk.slf.validTo)}</span>}
       {risk.freshnessNote && <span className="small muted">{risk.freshnessNote}</span>}

@@ -43,7 +43,7 @@ export const RISK_TEXT: Record<RiskColor, string> = {
 };
 
 export const RISK_GROUP_NOTE = 'Nur in Gruppen mit geschulten Leuten, nie allein.';
-export const RISK_UNKNOWN = 'Risiko unbekannt – keine aktuelle Skitourenguru-Farbe eingetragen';
+export const RISK_UNKNOWN = 'Risiko unbekannt – kein gültiges SLF-Bulletin oder keine Geländedaten, und keine Skitourenguru-Farbe von heute';
 export const BULLETIN_HINT = 'Prüfe vor dem Start das aktuelle SLF-Lawinenbulletin.';
 export const SIGNPOSTED_LABEL = 'Signalisierter Trail · keine Skitourenguru-Bewertung';
 export const NOT_AVALANCHE_LABEL = 'Pisten und Fotospots: keine Skitourenguru-Bewertung';
@@ -52,6 +52,19 @@ export const TRAINED_GROUP_QUESTION = 'Du bist in einer geschulten Gruppe?';
 export function riskLabel(color: RiskColor): string {
   return `Skitourenguru: ${RISK_COLOR_LABEL[color]} · ${RISK_TEXT[color]}`;
 }
+
+/** Wording of the GRM chart (without its «relativ sicher»). */
+export const GRM_TEXT: Record<RiskColor, string> = {
+  green: 'tiefe Gefahr laut Berechnung (GRM)',
+  orange: 'erhöhte Gefahr laut Berechnung (GRM) – Vorsicht, Erfahrung nötig',
+  red: 'hohe Gefahr laut Berechnung (GRM) – Verzicht empfohlen, sonst nur in Gruppen mit geschulten Leuten, nie allein',
+};
+
+export function grmLabel(color: RiskColor): string {
+  return `Berechnet: ${RISK_COLOR_LABEL[color]} · ${GRM_TEXT[color]}`;
+}
+
+export const GRM_HINT = 'Eigene Berechnung nach der Grafischen Reduktionsmethode – ersetzt die Beurteilung vor Ort nicht.';
 
 export function dangerLabel(level: DangerLevel | undefined): string {
   return level ? `Gefahrenstufe ${level} laut Bulletin` : 'Gefahrenstufe nicht eingetragen';
@@ -91,6 +104,7 @@ export const REASON = {
   greenRisk: 'Skitourenguru: grün',
   orangeRisk: 'Skitourenguru: orange',
   redRisk: 'Skitourenguru: rot',
+  grmRisk: (colour: string) => `Risiko berechnet: ${colour}`,
   signposted: 'Signalisierter Trail',
   provenFavourite: 'Bewährt',
   newPlace: 'Neu für dich',
@@ -135,7 +149,7 @@ export const PLAN_B_REASON = {
 } as const;
 
 export const CHECK_REASON = {
-  riskMissing: 'Für heute ist keine Skitourenguru-Farbe eingetragen.',
+  riskMissing: 'Für heute gibt es keine Risikofarbe (kein gültiges SLF-Bulletin oder keine Geländedaten, keine Skitourenguru-Farbe).',
   riskAbove: 'Lawinenrisiko gestiegen.',
   redUnconfirmed: 'Rote Tour ohne Bestätigung einer geschulten Gruppe.',
   weatherWorse: 'Die Prognose hat sich verschlechtert.',

@@ -14,6 +14,7 @@ import { computeTiming } from './timing';
 import { preferenceBonus, type Preferences } from './preferences';
 import { snowTooLow, type SnowObservation } from './snow';
 import type { SlfDanger } from './slf';
+import { grmEntry } from './grm';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
 export { travelFor } from './travel';
@@ -137,7 +138,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
     if (tooDifficult(profile, c.kind, c.difficulty)) base.push('too_difficult');
     if (!requiredEquipment(c).every((e) => profile.equipment.includes(e))) base.push('equipment_missing');
 
-    const riskStatus = resolveRisk(c, ctx.riskEntries, ctx.today);
+    const riskStatus = resolveRisk(c, ctx.riskEntries, ctx.today, grmEntry(c, ctx.slf?.[c.id], ctx.today));
     const decision = riskDecision(riskStatus, levelFor(profile, activity), input.trainedGroupConfirmed);
     if (decision === 'unknown') base.push(riskStatus.kind === 'unknown' && riskStatus.reason === 'stale' ? 'risk_stale' : 'risk_unknown');
     if (decision === 'above_level') base.push('risk_above_level');

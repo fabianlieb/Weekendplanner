@@ -145,14 +145,18 @@ export async function loadSlf(db: PlannerDB, opts: { now?: Date; fetchFn?: SlfFe
   return { regions: regions?.regions ?? [], ...(bulletin ? { bulletin } : {}) };
 }
 
-/** Danger per tour or snowshoe trail (pistes and photo spots have none). */
-export function slfByCandidate(candidates: readonly Candidate[], data: SlfData): Record<string, SlfDanger> {
+/**
+ * Danger per tour or snowshoe trail (pistes and photo spots have none). Only bulletin parts that are
+ * valid now count: an expired copy (offline) gives nothing, so the own calculation fails closed.
+ */
+export function slfByCandidate(candidates: readonly Candidate[], data: SlfData, now: Date = new Date()): Record<string, SlfDanger> {
   const out: Record<string, SlfDanger> = {};
   if (!data.bulletin || !data.regions.length) return out;
+  const t = now.getTime();
   for (const c of candidates) {
     if (c.kind !== 'ski_tour' && c.kind !== 'snowshoe_trail') continue;
     const d = slfDangerFor(c, data.regions, data.bulletin);
-    if (d) out[c.id] = d;
+    if (d && new Date(d.validFrom).getTime() <= t && t < new Date(d.validTo).getTime()) out[c.id] = d;
   }
   return out;
 }
