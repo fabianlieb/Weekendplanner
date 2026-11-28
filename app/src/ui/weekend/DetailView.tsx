@@ -1,5 +1,6 @@
 import { getDb } from '../../data/db';
 import { currentWeekendPlan, findSuggestion } from '../../data/planner';
+import { CATALOG_ATTRIBUTION, getCandidate } from '../../data/catalog';
 import { choosePlan, setPacked } from '../../data/repositories';
 import { packingList } from '../../engine/packing';
 import { formatTime } from '../../engine/util';
@@ -18,7 +19,7 @@ export function DetailView({ id }: { id: string | undefined }) {
   const { data, reload } = useAsync(async () => {
     const plan = await currentWeekendPlan(db);
     const s = plan && id ? findSuggestion(plan, id) : undefined;
-    const candidate = s ? await db.candidates.get(s.candidateId) : undefined;
+    const candidate = s ? await getCandidate(db, s.candidateId) : undefined;
     return { plan, s, candidate };
   }, [id]);
   if (!data) return null;
@@ -142,6 +143,7 @@ export function DetailView({ id }: { id: string | undefined }) {
           </span>
         )}
         {nav && <span className="small">Ziel fürs Auto: {nav.label}</span>}
+        {candidate?.difficulty && <span className="small">Schwierigkeit: {candidate.difficulty}</span>}
         {s.priceChf !== undefined && <span className="small">Tageskarte CHF {s.priceChf}</span>}
         <div className="row-wrap">
           {candidate && (
@@ -156,11 +158,14 @@ export function DetailView({ id }: { id: string | undefined }) {
           )}
           {candidate?.link && (
             <a className="btn" href={candidate.link} target="_blank" rel="noreferrer">
-              Link
+              {candidate.source?.includes('SAC') ? 'SAC-Tourenportal' : candidate.source?.includes('SchweizMobil') ? 'SchweizMobil' : 'Link'}
             </a>
           )}
         </div>
         {candidate?.note && <span className="tiny muted">{candidate.note}</span>}
+        {candidate?.source && candidate.kind !== 'ski_resort' && (
+          <span className="tiny muted">Aus dem Katalog: {CATALOG_ATTRIBUTION}. Routenangaben ohne Gewähr, Verlauf hängt von den Verhältnissen ab.</span>
+        )}
       </Section>
 
       <div className="action-bar">

@@ -9,7 +9,7 @@ import { buildRiskInfo, needsAvalancheRating, resolveRisk, riskDecision } from '
 import { buildSchedule } from './schedule';
 import { PLAN_B_REASON, activityLabel } from './texts';
 import { THRESHOLDS } from './thresholds';
-import { levelFor } from './profile';
+import { levelFor, tooDifficult } from './profile';
 import { computeTiming } from './timing';
 import { travelFor } from './travel';
 import { weatherSummary } from './weatherSummary';
@@ -116,6 +116,7 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
     const base: ExclusionReason[] = [];
     if (!c.active) base.push('inactive');
     if (!profile.activities[activity].enabled) base.push('activity_disabled');
+    if (tooDifficult(profile, c.kind, c.difficulty)) base.push('too_difficult');
     if (!requiredEquipment(c).every((e) => profile.equipment.includes(e))) base.push('equipment_missing');
 
     const riskStatus = resolveRisk(c, ctx.riskEntries, ctx.today);
@@ -164,7 +165,12 @@ export function evaluateOptions(ctx: EngineContext): Evaluation {
         }
 
         if (reasons.length > 0 || !timing || !cond || !travel || !startPoint || budget === 'free') {
-          excluded.push({ candidateId: c.id, day, slot, reasons: [...new Set(reasons)] });
+          const unique = [...new Set(reasons)];
+          // Only the colour is missing: remember how good the option would be (to ask for the best tours first).
+          const onlyColour = unique.length > 0 && unique.every((r) => r === 'risk_unknown' || r === 'risk_stale');
+          const potential =
+            onlyColour && cond ? Math.round(THRESHOLDS.scoring.conditionWeight * cond.score + THRESHOLDS.scoring.fitWeight * fitScore(c, cap, input.dayForm)) : undefined;
+          excluded.push({ candidateId: c.id, day, slot, reasons: unique, ...(potential !== undefined ? { potential } : {}) });
           continue;
         }
 

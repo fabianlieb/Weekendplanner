@@ -7,6 +7,7 @@ import type { EveningCheckRecord, PlannerDB, StoredRiskEntry, WeekendPlan } from
 
 export const DEFAULT_PROFILE: Profile = {
   equipment: [],
+  maxDifficulty: { ski_tour: 'WS', snowshoe: 'mittel' },
   // All sports on, most conservative level until the user sets it.
   activities: {
     ski_tour: { enabled: true, level: 1 },

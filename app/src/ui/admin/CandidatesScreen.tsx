@@ -3,7 +3,8 @@ import { listCandidates, setDone, setFavorite } from '../../data/repositories';
 import { StarIcon } from '../icons';
 import { SEED_CANDIDATES } from '../../data/seed';
 import type { Candidate } from '../../engine/types';
-import { Notice, PageHead, Section, showToast, useAsync } from '../components';
+import { Choice, Notice, PageHead, Section, showToast, useAsync } from '../components';
+import { CatalogBrowser } from './CatalogBrowser';
 import { KIND_ORDER, KIND_PLURAL } from '../labels';
 import { navigate } from '../router';
 
@@ -25,7 +26,7 @@ function meta(c: Candidate): string {
   return parts.join(' · ');
 }
 
-export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
+export function CandidatesScreen({ welcome = false, src = 'own' }: { welcome?: boolean; src?: 'own' | 'catalog' }) {
   const db = getDb();
   const { data: candidates, reload } = useAsync(() => listCandidates(db), []);
   if (!candidates) return null;
@@ -48,12 +49,25 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
 
   return (
     <>
-      <PageHead overline="Liste" title="Deine Orte" lead={`${candidates.length} Einträge · Touren, Trails, Skigebiete, Fotospots`} />
-      {welcome && candidates.length > 0 && (
+      <PageHead overline="Liste" title="Orte" lead="Die App schlägt aus dem Katalog vor; eigene Orte ergänzen ihn." />
+      {welcome && (
         <button type="button" className="btn btn-primary" onClick={() => navigate('thursday')}>
           Fertig: Vorschläge zeigen
         </button>
       )}
+      <Choice<'own' | 'catalog'>
+        label="Liste"
+        options={[
+          { value: 'catalog', label: 'Katalog' },
+          { value: 'own', label: `Eigene (${candidates.length})` },
+        ]}
+        value={src}
+        onChange={(v) => navigate('list', v === 'catalog' ? { src: 'catalog' } : {}, true)}
+      />
+      {src === 'catalog' ? (
+        <CatalogBrowser />
+      ) : (
+      <>
       <div className="grid-2">
         <button type="button" className="btn btn-dark" onClick={() => navigate('list', { edit: 'new' })}>
           Neuer Eintrag
@@ -65,8 +79,8 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
 
       {candidates.length === 0 && (
         <Notice>
-          Deine Liste ist leer. Du kannst mit der Startliste beginnen: {SEED_CANDIDATES.length} Beispiele aus der Ost- und Zentralschweiz und Graubünden. Koordinaten,
-          Höhen, Zeiten und Signalisation sind ungefähr und müssen von dir geprüft werden.
+          Noch keine eigenen Orte. Das ist kein Problem: Die App schlägt aus dem Katalog vor (SAC-Skirouten, Schneeschuh-Trails, Skigebiete). Eigene Orte brauchst du
+          vor allem für Fotospots. Für einen schnellen Start gibt es {SEED_CANDIDATES.length} Beispiele (Koordinaten ungefähr, bitte prüfen).
           <div style={{ marginTop: 10 }}>
             <button type="button" className="btn" onClick={() => void addSeed()}>
               Startliste laden
@@ -110,6 +124,8 @@ export function CandidatesScreen({ welcome = false }: { welcome?: boolean }) {
 
       {candidates.length > 0 && (
         <span className="tiny muted">Stern = Merkliste: der Spot-Radar auf der Startseite meldet sehr gute Bedingungen. «gemacht» = bewährt, pro Wochenende kommen etwa 2 bewährte und 1 neue Option.</span>
+      )}
+      </>
       )}
     </>
   );

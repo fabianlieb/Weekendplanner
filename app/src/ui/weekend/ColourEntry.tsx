@@ -52,7 +52,18 @@ export function ColourEntry({ tours, onChange }: { tours: Candidate[]; onChange:
           <div key={t.id} className="colour-row">
             <span className="colour-name">
               <strong>{t.name}</strong>
-              {t.region && <span className="tiny muted"> {t.region}</span>}
+              <span className="tiny muted">
+                {' '}
+                {[t.region, t.difficulty, t.elevationGain ? `${t.elevationGain} Hm` : undefined].filter(Boolean).join(' · ')}
+              </span>
+              {t.link && (
+                <>
+                  {' '}
+                  <a className="tiny" href={t.link} target="_blank" rel="noreferrer">
+                    {t.source?.includes('SAC') ? 'Route beim SAC' : 'Route'}
+                  </a>
+                </>
+              )}
             </span>
             <Choice<RiskColor>
               className="risk-choice compact"

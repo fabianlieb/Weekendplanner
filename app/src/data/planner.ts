@@ -2,8 +2,10 @@
 
 import { eveningCheck, type CheckResult } from '../engine/eveningCheck';
 import { evaluateOptions, suggest } from '../engine/suggest';
+import { selectPool } from '../engine/pool';
+import { getCatalog } from './catalog';
 import { spotRadar } from '../engine/radar';
-import type { Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
+import type { Candidate, Exclusion, ExclusionReason, IsoDate, PlanB, Profile, StartPoint, Suggestion, WeekendInput } from '../engine/types';
 import { PLAN_B_REASON } from '../engine/texts';
 import { addDays, haversineKm, upcomingWeekend, weekday, zurichToday } from '../engine/util';
 import type { PlannerDB, WeekendPlan } from './db';
@@ -13,6 +15,8 @@ import { loadWeather, type WeatherLoadOptions, type WeatherLoadResult } from './
 
 export interface PlannerOptions extends WeatherLoadOptions {
   now?: Date;
+  /** Catalogue entries (tests inject them; default: routes.json + built-in ski areas). */
+  catalog?: readonly Candidate[];
   /** Ad-hoc start point (current location) used for this computation and stored with the plan. */
   extraStartPoint?: StartPoint;
 }
@@ -92,10 +96,21 @@ export function summariseExclusions(excluded: readonly Exclusion[], suggestedOrV
   return out;
 }
 
-/** Candidates that would have at least one valid option if only today's Skitourenguru colour were entered. */
-export function awaitingColour(excluded: readonly Exclusion[]): string[] {
+/** How many tours at most the app asks colours for (the best-fitting first). */
+export const MAX_AWAITING_COLOUR = 5;
+
+/**
+ * Tours that would have a valid option if only today's Skitourenguru colour were entered,
+ * best potential first, at most MAX_AWAITING_COLOUR.
+ */
+export function awaitingColour(excluded: readonly Exclusion[], max = MAX_AWAITING_COLOUR): string[] {
   const riskOnly = (r: ExclusionReason) => r === 'risk_unknown' || r === 'risk_stale';
-  return [...new Set(excluded.filter((e) => e.reasons.length > 0 && e.reasons.every(riskOnly)).map((e) => e.candidateId))];
+  const best = new Map<string, number>();
+  for (const e of excluded) {
+    if (e.reasons.length === 0 || !e.reasons.every(riskOnly)) continue;
+    best.set(e.candidateId, Math.max(best.get(e.candidateId) ?? -1, e.potential ?? 0));
+  }
+  return [...best.entries()].sort((a, b) => b[1] - a[1]).slice(0, max).map(([id]) => id);
 }
 
 export interface ComputeResult {
@@ -107,8 +122,19 @@ export interface ComputeResult {
 export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opts: PlannerOptions = {}): Promise<ComputeResult> {
   const now = opts.now ?? new Date();
   const today = zurichToday(now);
-  const [savedProfile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const [savedProfile, own, feedback, catalog] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db), getCatalog(db, opts.catalog)]);
   const profile = withStartPoint(savedProfile, opts.extraStartPoint);
+  const previousPlan = await getWeekendPlan(db, weekendKey(today));
+  const candidates = selectPool({
+    own,
+    catalog,
+    profile,
+    ...(profile.startPoints.find((s) => s.id === input.startPointId) ? { startPoint: profile.startPoints.find((s) => s.id === input.startPointId)! } : {}),
+    maxTravelHours: input.maxTravelHours,
+    dayForm: input.dayForm,
+    feedback,
+    include: new Set(previousPlan?.chosen ? [previousPlan.chosen.candidateId] : []),
+  });
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { ...opts, now });
 
@@ -126,7 +152,13 @@ export async function computeSuggestions(db: PlannerDB, input: WeekendInput, opt
     ...(result.planB ? { planB: result.planB } : {}),
     // Recomputing drops a chosen plan only if it no longer exists.
     // A chosen plan always survives a recomputation (as snapshot); the evening check decides if it still holds.
-    ...(previous?.chosenId ? { chosenId: previous.chosenId, ...(previous.chosen ? { chosen: previous.chosen } : {}) } : {}),
+    // Plans chosen before snapshots existed: take the snapshot from the previous suggestions.
+    ...(previous?.chosenId
+      ? (() => {
+          const snapshot = previous.chosen ?? findSuggestion(previous, previous.chosenId);
+          return { chosenId: previous.chosenId, ...(snapshot ? { chosen: snapshot } : {}) };
+        })()
+      : {}),
     checks: previous?.checks ?? [],
     excludedSummary: summariseExclusions(result.excluded, validIds),
     awaitingColour: awaitingColour(result.excluded),
@@ -174,8 +206,19 @@ export async function runEveningCheck(db: PlannerDB, opts: PlannerOptions = {}):
   if (!chosen) return { status: 'no_choice', plan };
   if (chosen.date < today) return { status: 'past', plan, chosen };
 
-  const [savedProfile, candidates, feedback] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db)]);
+  const [savedProfile, own, feedback, catalog] = await Promise.all([getProfile(db), listCandidates(db), listFeedback(db), getCatalog(db, opts.catalog)]);
   const profile = withStartPoint(savedProfile, plan.startPoint);
+  const candidates = selectPool({
+    own,
+    catalog,
+    profile,
+    ...(profile.startPoints.find((s) => s.id === plan.input.startPointId) ? { startPoint: profile.startPoints.find((s) => s.id === plan.input.startPointId)! } : {}),
+    maxTravelHours: plan.input.maxTravelHours,
+    dayForm: plan.input.dayForm,
+    feedback,
+    // The chosen plan and its Plan B must be re-evaluated even if the pool changed.
+    include: new Set([chosen.candidateId, ...(plan.planB ? [plan.planB.candidateId] : [])]),
+  });
   const riskEntries = await new ManualRiskProvider(db).getEntries(candidates.map((c) => c.id));
   const { weather, ...weatherMeta } = await loadWeather(db, candidates, { forceRefresh: true, ...opts, now });
   const ctx = { profile, input: plan.input, candidates, riskEntries, weather, today, feedback };

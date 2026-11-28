@@ -1,4 +1,5 @@
 import type { WeekendPlan } from '../../data/db';
+import { chosenSuggestion } from '../../data/planner';
 import { Notice } from '../components';
 import { formatClock, summaryText } from '../format';
 import { SuggestionCard } from './SuggestionCard';
@@ -24,7 +25,7 @@ export function SuggestionList({ plan }: { plan: WeekendPlan }) {
         </Notice>
       )}
 
-      {(list.length > 0 || planB) && <h2 className="list-head">{plan.chosenId ? 'Weitere Vorschläge' : 'Vorschläge'}</h2>}
+      {(list.length > 0 || planB) && <h2 className="list-head">{chosenSuggestion(plan) ? 'Weitere Vorschläge' : 'Vorschläge'}</h2>}
       <div className="stack">
         {list.map((s) => (
           <SuggestionCard key={s.id} s={s} />

@@ -144,7 +144,7 @@ describe('weather cache', () => {
 describe('planner (storage + weather + engine)', () => {
   it('Thursday: computes and stores 3 suggestions + Plan B', async () => {
     await seed();
-    const { plan, weather } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan, weather } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(plan.weekend).toBe('2026-12-05');
     expect(plan.computedOn).toBe('2026-12-03');
     expect(plan.suggestions).toHaveLength(3);
@@ -155,39 +155,39 @@ describe('planner (storage + weather + engine)', () => {
 
   it('Friday evening check: without Friday colours a chosen tour switches to Plan B', async () => {
     await seed();
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     const tour = plan.suggestions.find((s) => s.avalancheDependent);
     expect(tour).toBeDefined();
     await choosePlan(db, plan.weekend, tour!.id);
 
-    const noColours = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch() });
+    const noColours = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(noColours.status).toBe('checked');
     if (noColours.status === 'checked') expect(noColours.result.status).toBe('switch');
 
     for (const r of freshRisks('2026-12-04')) await setRisk(db, r.candidateId, r.date, r.color, r.dangerLevel, FRIDAY);
-    const withColours = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch() });
+    const withColours = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] });
     if (withColours.status === 'checked') expect(withColours.result.status).toBe('holds');
     expect((await db.weekendPlans.get(plan.weekend))?.checks).toHaveLength(2);
   });
 
   it('evening check without a chosen plan asks to choose', async () => {
     await seed();
-    await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
-    expect((await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch() })).status).toBe('no_choice');
+    await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    expect((await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] })).status).toBe('no_choice');
   });
 
   it('recomputing keeps the chosen plan if it still exists', async () => {
     await seed();
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     await choosePlan(db, plan.weekend, plan.suggestions[0]!.id);
-    const again = await computeSuggestions(db, input, { now: new Date(THURSDAY.getTime() + 60000), fetchFn: weatherFetch() });
+    const again = await computeSuggestions(db, input, { now: new Date(THURSDAY.getTime() + 60000), fetchFn: weatherFetch(), catalog: [] });
     expect(chosenSuggestion(again.plan)?.id).toBe(plan.suggestions[0]!.id);
   });
 
   it('stores a summary of why candidates were not suggested', async () => {
     await seed();
     await db.riskEntries.clear();
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(plan.excludedSummary?.risk_unknown).toBe(4); // 3 tours + 1 unsignposted trail without colour
     // Languard is also too far away → not «awaiting colour»; the other three would fit.
     expect([...(plan.awaitingColour ?? [])].sort()).toEqual(['fronalpstock', 'pizol', 'schwarzhorn']);
@@ -205,7 +205,7 @@ describe('planner (storage + weather + engine)', () => {
 
   it('adopting an alternative from the evening check makes it the chosen Plan B', async () => {
     await seed();
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     const alt = { ...plan.suggestions[1]!, id: 'other:2026-12-05:day', candidateId: 'other' };
     await adoptAlternative(db, plan.weekend, alt);
     const stored = await db.weekendPlans.get(plan.weekend);
@@ -235,31 +235,41 @@ describe('planner (storage + weather + engine)', () => {
   it('an ad-hoc start point is stored with the plan and used by the evening check', async () => {
     await seed();
     const here = { id: HERE, name: 'Standort', lat: 47.05, lon: 9.0 };
-    const { plan } = await computeSuggestions(db, { ...input, startPointId: HERE }, { now: THURSDAY, fetchFn: weatherFetch(), extraStartPoint: here });
+    const { plan } = await computeSuggestions(db, { ...input, startPointId: HERE }, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [], extraStartPoint: here });
     expect(plan.startPoint).toEqual(here);
     expect(plan.suggestions.length).toBeGreaterThan(0);
     expect(plan.suggestions.every((s) => s.travel.startPointName === 'Standort' && s.travel.estimated)).toBe(true);
     await choosePlan(db, plan.weekend, plan.suggestions[0]!.id);
-    const check = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch() });
+    const check = await runEveningCheck(db, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(check.status).toBe('checked');
   });
 
   it('auto-update only without plan, or once a day from the morning on', async () => {
     await seed();
     expect(needsAutoCompute(undefined, '2026-12-03', 2)).toBe(true);
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(needsAutoCompute(plan, '2026-12-03', 18)).toBe(false); // same day: stays, manual only
     expect(needsAutoCompute(plan, '2026-12-04', 3)).toBe(false); // night: not yet
     expect(needsAutoCompute(plan, '2026-12-04', 7)).toBe(true); // next morning: once
   });
 
+  it('a plan chosen before snapshots existed keeps its card after recomputation', async () => {
+    await seed();
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
+    const tour = plan.suggestions.find((s) => s.avalancheDependent)!;
+    await db.weekendPlans.put({ ...plan, chosenId: tour.id }); // old format: id only, no snapshot
+    await db.riskEntries.clear();
+    const again = await computeSuggestions(db, input, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] });
+    expect(chosenSuggestion(again.plan)?.id).toBe(tour.id);
+  });
+
   it('a chosen plan survives recomputation even if it is no longer suggested', async () => {
     await seed();
-    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch() });
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [] });
     const tour = plan.suggestions.find((s) => s.avalancheDependent)!;
     await choosePlan(db, plan.weekend, tour.id);
     await db.riskEntries.clear(); // Friday morning: Thursday colours no longer valid
-    const again = await computeSuggestions(db, input, { now: FRIDAY, fetchFn: weatherFetch() });
+    const again = await computeSuggestions(db, input, { now: FRIDAY, fetchFn: weatherFetch(), catalog: [] });
     expect(again.plan.suggestions.some((s) => s.id === tour.id)).toBe(false);
     expect(chosenSuggestion(again.plan)?.id).toBe(tour.id);
   });
@@ -366,5 +376,41 @@ describe('backup export/import', () => {
   it('duplicate ids are reported', () => {
     const r = validateImport([candidates[0], candidates[0]]);
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('catalogue', () => {
+  it('applies the user markings (favourite, done, hidden)', async () => {
+    const { getCatalog, setCatalogState, getCandidate, copyToOwn } = await import('./catalog');
+    const entry = { ...candidates.find((c) => c.id === 'pizol')!, id: 'sac-ski-x', source: 'swisstopo/SAC' };
+    await setCatalogState(db, 'sac-ski-x', { favorite: true });
+    await setCatalogState(db, 'sac-ski-x', { done: true });
+    let cat = await getCatalog(db, [entry]);
+    expect(cat[0]).toMatchObject({ favorite: true, done: true, active: true });
+    await setCatalogState(db, 'sac-ski-x', { hidden: true });
+    cat = await getCatalog(db, [entry]);
+    expect(cat[0]?.active).toBe(false);
+    expect((await getCandidate(db, 'sac-ski-x', [entry]))?.name).toBe(entry.name);
+    const own = copyToOwn(entry, 'own-1');
+    expect(own.source).toBeUndefined();
+    expect(own.note).toMatch(/Übernommen aus: swisstopo\/SAC/);
+  });
+
+  it('suggestions can come from the catalogue only; at most 5 tours ask for a colour', async () => {
+    await saveProfile(db, profile);
+    const tours = Array.from({ length: 8 }, (_, i) => ({
+      ...candidates.find((c) => c.id === 'pizol')!,
+      id: `sac-ski-${i}`,
+      name: `Tour ${i}`,
+      summit: { lat: 46.97 + i * 0.02, lon: 9.39, elevation: 2800 },
+      source: 'swisstopo/SAC',
+      done: false,
+    }));
+    const resorts = candidates.filter((c) => c.kind === 'ski_resort').map((c) => ({ ...c, id: `ski-${c.id}`, source: 'Skigebiete (eingebaut)' }));
+    const { plan } = await computeSuggestions(db, input, { now: THURSDAY, fetchFn: weatherFetch(), catalog: [...tours, ...resorts] });
+    expect(plan.suggestions.length).toBeGreaterThan(0);
+    expect(plan.suggestions.every((s) => s.candidateId.startsWith('ski-') || s.candidateId.startsWith('sac-'))).toBe(true);
+    expect(plan.suggestions.some((s) => s.avalancheDependent)).toBe(false); // no colours → no tours
+    expect(plan.awaitingColour?.length).toBe(5);
   });
 });

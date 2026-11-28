@@ -196,6 +196,7 @@ function validateProfile(v: unknown, e: Errors): Profile | undefined {
   return normalizeProfile({
     equipment,
     ...(isObj(v.activities) ? { activities: v.activities as unknown as Profile['activities'] } : { riskLevel: v.riskLevel }),
+    ...(isObj(v.maxDifficulty) ? { maxDifficulty: v.maxDifficulty as unknown as Profile['maxDifficulty'] } : {}),
     fitness: { maxElevationGain: f.maxElevationGain as number, maxHours: f.maxHours as number },
     earliestStart: v.earliestStart as number,
     startPoints,

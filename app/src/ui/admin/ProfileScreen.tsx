@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDb } from '../../data/db';
 import { getProfile, hasProfile, newId, saveProfile } from '../../data/repositories';
-import { ACTIVITIES, AVALANCHE_ACTIVITIES, missingEquipment } from '../../engine/profile';
-import type { Activity, Equipment, Profile, RiskLevel, StartPoint } from '../../engine/types';
+import { ACTIVITIES, AVALANCHE_ACTIVITIES, SKI_TOUR_GRADES, SNOWSHOE_GRADES, missingEquipment } from '../../engine/profile';
+import type { Activity, Equipment, Profile, RiskLevel, SkiTourGrade, SnowshoeGrade, StartPoint } from '../../engine/types';
 import { formatTime, parseTime } from '../../engine/util';
 import { Choice, Field, Notice, PageHead, Section, showToast, useAsync } from '../components';
 import { formatCoordinates, parseCoordinatesOrLink as parseCoordinates } from '../geo';
@@ -126,6 +126,37 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
                     onChange={(level) => setActivity(a, { level })}
                   />
                   <span className="tiny">{LEVEL_TEXT[s.level]}</span>
+                  {a === 'ski_tour' ? (
+                    <div className="row">
+                      <span className="tiny" style={{ width: 92, flex: 'none' }}>
+                        Schwierigkeit bis (SAC)
+                      </span>
+                      <div className="grow">
+                        <Choice<SkiTourGrade>
+                          className="compact"
+                          label="Schwierigkeit Skitour bis"
+                          options={SKI_TOUR_GRADES.map((g) => ({ value: g, label: g }))}
+                          value={p.maxDifficulty.ski_tour}
+                          onChange={(g) => setProfile({ maxDifficulty: { ...p.maxDifficulty, ski_tour: g } })}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="row">
+                      <span className="tiny" style={{ width: 92, flex: 'none' }}>
+                        Schwierigkeit bis
+                      </span>
+                      <div className="grow">
+                        <Choice<SnowshoeGrade>
+                          className="compact"
+                          label="Schwierigkeit Schneeschuh bis"
+                          options={SNOWSHOE_GRADES.map((g) => ({ value: g, label: g }))}
+                          value={p.maxDifficulty.snowshoe}
+                          onChange={(g) => setProfile({ maxDifficulty: { ...p.maxDifficulty, snowshoe: g } })}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
               {missing.length > 0 && (
@@ -139,7 +170,10 @@ export function ProfileScreen({ welcome }: { welcome: boolean }) {
             </div>
           );
         })}
-        <span className="tiny muted">Die Stufe begrenzt, welche Skitourenguru-Farben vorgeschlagen werden. Die Farbe selbst trägst du tagesaktuell auf dem Wochenende-Screen ein.</span>
+        <span className="tiny muted">
+          Die Stufe begrenzt, welche Skitourenguru-Farben vorgeschlagen werden; die Farbe selbst trägst du tagesaktuell auf dem Wochenende-Screen ein. Die
+          Schwierigkeit begrenzt die Routen aus dem Katalog (SAC-Skala L · WS · ZS · S; Schneeschuh leicht · mittel · schwer).
+        </span>
       </Section>
 
       <Section title="Material">

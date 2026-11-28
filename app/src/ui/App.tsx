@@ -4,6 +4,7 @@ import { hasProfile } from '../data/repositories';
 import { BackupScreen } from './admin/BackupScreen';
 import { CandidateEditor } from './admin/CandidateEditor';
 import { CandidatesScreen } from './admin/CandidatesScreen';
+import { CatalogDetail } from './admin/CatalogDetail';
 import { ProfileScreen } from './admin/ProfileScreen';
 import { TravelTable } from './admin/TravelTable';
 import { Attribution, Notice, Toast } from './components';
@@ -50,7 +51,16 @@ export function App() {
   let content: ReactNode;
   switch (route.view) {
     case 'list':
-      content = p.travel === '1' ? <TravelTable /> : p.edit !== undefined ? <CandidateEditor id={p.edit === 'new' ? undefined : p.edit} kind={p.kind} /> : <CandidatesScreen welcome={p.welcome === '1'} />;
+      content =
+        p.travel === '1' ? (
+          <TravelTable />
+        ) : p.catalog ? (
+          <CatalogDetail key={p.catalog} id={p.catalog} />
+        ) : p.edit !== undefined ? (
+          <CandidateEditor id={p.edit === 'new' ? undefined : p.edit} kind={p.kind} />
+        ) : (
+          <CandidatesScreen welcome={p.welcome === '1'} src={p.src === 'catalog' ? 'catalog' : 'own'} />
+        );
       break;
     case 'profile':
       content = <ProfileScreen welcome={p.welcome === '1'} />;

@@ -21,6 +21,7 @@ export const SUN: IsoDate = '2026-12-06';
 
 export const profile: Profile = {
   equipment: ['alpine_ski', 'touring_ski', 'skins', 'avalanche_kit', 'snowshoes', 'camera', 'tripod'],
+  maxDifficulty: { ski_tour: 'ZS', snowshoe: 'schwer' },
   activities: {
     ski_tour: { enabled: true, level: 2 },
     snowshoe: { enabled: true, level: 2 },

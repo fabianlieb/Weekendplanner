@@ -45,6 +45,7 @@ Dann http://localhost:5173 öffnen (im Browser die Entwicklertools auf Handybrei
 | `npm run build` | Produktions-Build nach `dist/` |
 | `npm run preview` | Build lokal ansehen, inkl. Service Worker (offline testbar) |
 | `node scripts/make-icons.mjs` | App-Symbole in `public/` neu erzeugen |
+| `node scripts/build-catalog.mjs` | Routen-Katalog von geo.admin.ch neu laden (einige Minuten) |
 
 Der Service Worker ist nur im Build aktiv (`npm run build` + `npm run preview`), nicht im Entwicklungsserver.
 
@@ -129,6 +130,23 @@ iOS öffnet «URL öffnen» je nach Version **in Safari statt in der installiert
 4. **Sonntagabend:** Die Startseite fragt nach dem **Feedback** – umgesetzt? wie viele Vorschläge passten? wie streng war die Tour? Die Auswertung zeigt Umsetzungsrate und Ø passende Vorschläge über die 8 Testwochenenden.
 
 ---
+
+### Katalog: Vorschläge ohne eigene Liste
+
+Die App schlägt aus einem **Katalog** vor; die eigene Liste ergänzt ihn (z. B. um Fotospots):
+
+| Quelle | Inhalt | Anzahl (Nov. 2026) |
+|---|---|---|
+| swisstopo / SAC, Skirouten | Gipfel, Route, SAC-Schwierigkeit, Höhenmeter, Aufstiegszeit, Link ins SAC-Tourenportal | 2472 |
+| swisstopo / SAC, Schneeschuhrouten | dito, Schwierigkeit WT1–WT5 (nicht signalisiert → braucht Skitourenguru-Farbe) | 391 |
+| ASTRA / SchweizMobil, Schneeschuhwanderwege | signalisierte Trails mit Länge, Höhenmeter, Zeit, Link zu SchweizMobil | 396 |
+| eingebaute Liste | 26 grössere Skigebiete (Koordinaten ungefähr) | 26 |
+
+- **Auswahl:** Vor dem Wetterabruf filtert die App nach Sportart, **Schwierigkeit** (Profil: Skitour bis L/WS/ZS/S, Schneeschuh bis leicht/mittel/schwer), Kondition und geschätzter Anreise und nimmt pro Sportart die nächstgelegenen (bis 40 Skitouren, 30 Schneeschuh, 15 Skigebiete). Merkorte, als gemacht markierte und der gewählte Plan kommen immer mit. Eigene Einträge haben Vorrang: ein Katalog-Eintrag mit Gipfel unter 1 km von einem eigenen fällt weg.
+- **Farben:** Touren brauchen weiterhin die Skitourenguru-Farbe von heute. Die App fragt nur die **5 passendsten** ab (mit Link zur Route beim SAC, damit du sie auf Skitourenguru findest).
+- **Liste → Katalog:** suchen, nach Sportart filtern, Orte merken (Stern), als gemacht markieren, ausblenden («Nicht vorschlagen») oder «In eigene Liste übernehmen», um Anreisezeiten, Parkplatz und Packliste zu ergänzen.
+- **Aktualisierung:** `node scripts/build-catalog.mjs` lädt die Daten über die offene API von geo.admin.ch (ohne Schlüssel) nach `public/catalog/routes.json`. Der Deploy-Workflow macht das monatlich automatisch (bei einem Fehler bleibt der gespeicherte Stand).
+- **Lizenz:** Open Government Data; die Quellenangabe ist Pflicht und steht auf jeder Seite («Routen: © swisstopo / SAC · Schneeschuhwanderwege: ASTRA / SchweizMobil»). Routenangaben ohne Gewähr – der effektive Verlauf hängt von den Verhältnissen ab.
 
 ### Kalender
 
@@ -234,6 +252,7 @@ Entweder ein Array `[ … ]` oder ein Objekt `{ "candidates": [ … ] }`:
 | `active` | nein | Wird vorgeschlagen, Standard `true` |
 | `parking` | nein | `{ lat, lon }` – Parkplatz für die Navigation (Google Maps) |
 | `favorite` | nein | Merkliste (Spot-Radar), Standard `false` |
+| `difficulty` | nein | Schwierigkeit: SAC-Skala (`L`, `WS`, `ZS` …, `WT1`–`WT6`) oder Trail-Farbe (`blau`, `rot`, `schwarz`) |
 | `packing` | nein | Liste zusätzlicher Gegenstände für die Packliste |
 | `photoSpotIds` | nein | IDs zugeordneter Fotospots (sonst automatisch im Umkreis von 10 km) |
 | `link` | nein | Muss mit `http://` oder `https://` beginnen |
@@ -259,6 +278,7 @@ Erzeugt von *Backup als JSON speichern*; Import wahlweise **zusammenführen** od
       "ski": { "enabled": true, "level": 1 },
       "photo": { "enabled": true, "level": 1 }
     },
+    "maxDifficulty": { "ski_tour": "WS", "snowshoe": "mittel" },
     "fitness": { "maxElevationGain": 1200, "maxHours": 6 },
     "earliestStart": 300,
     "startPoints": [{ "id": "home", "name": "Zuhause", "lat": 47.3769, "lon": 8.5417 }]
@@ -340,7 +360,8 @@ app/
 
 ## Bekannte Grenzen
 
-- **Startliste:** 18 Beispiele mit **ungefähren** Koordinaten, Höhen und Zeiten – vor dem Gebrauch prüfen («In swisstopo prüfen» im Editor), Signalisation der Trails vor Ort klären.
+- **Startliste und Skigebiete:** Beispiele bzw. eingebaute Skigebiete mit **ungefähren** Koordinaten – bei Bedarf prüfen («In swisstopo prüfen» im Editor).
+- **Katalog-Routen:** Start und Gipfel werden aus der Routenlinie und dem Höhenmodell abgeleitet; Dauer = SAC-Aufstiegszeit plus geschätzte Abfahrt. Anreise wird aus der Luftlinie geschätzt.
 - **Anreise:** ohne eingetragene Zeit nur eine Schätzung aus der Luftlinie – auch beim Startpunkt «Standort» weit weg von gespeicherten Startpunkten. Für verlässliche Pläne die Minuten pro Startpunkt eintragen (Tabelle *Anreisezeiten*).
 - **Kalender auf dem iPhone:** ob die installierte App den Dialog «Zum Kalender hinzufügen» direkt öffnet, hängt von der iOS-Version ab – bitte testen.
 - **Foto-Zusatz:** Die Fahrt zwischen Fotospot und Aktivität wird vorsichtig aus der Luftlinie geschätzt; Bergketten kennt die App nicht. Fotospots deshalb am besten selbst zuordnen.

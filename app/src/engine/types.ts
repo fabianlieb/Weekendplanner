@@ -56,9 +56,14 @@ export interface ActivitySetting {
   level: RiskLevel;
 }
 
+export type SkiTourGrade = 'L' | 'WS' | 'ZS' | 'S';
+export type SnowshoeGrade = 'leicht' | 'mittel' | 'schwer';
+
 export interface Profile {
   equipment: Equipment[];
   activities: Record<Activity, ActivitySetting>;
+  /** Hardest technical difficulty to suggest (catalogue routes carry a difficulty). */
+  maxDifficulty: { ski_tour: SkiTourGrade; snowshoe: SnowshoeGrade };
   fitness: {
     /** Maximum elevation gain on a normal day, metres. */
     maxElevationGain: number;
@@ -86,6 +91,10 @@ export interface Candidate {
    * Photo spots: minimum stay; the light window may make it longer.
    */
   durationHours: number;
+  /** Where the entry comes from; undefined = own list. E.g. «swisstopo/SAC», «ASTRA/SchweizMobil». */
+  source?: string;
+  /** Technical difficulty: SAC scale for tours (L, WS, ZS …, WT1–WT6) or trail colour (blau, rot, schwarz). */
+  difficulty?: string;
   /** On the «Merkliste»: shown in the spot radar when conditions are very good. */
   favorite?: boolean;
   /** Extra items for the packing list of this place (e.g. «Steigeisen», «Bargeld für Parkplatz»). */
@@ -293,6 +302,7 @@ export interface Option {
 export type ExclusionReason =
   | 'inactive'
   | 'activity_disabled'
+  | 'too_difficult'
   | 'equipment_missing'
   | 'risk_unknown'
   | 'risk_stale'
@@ -375,6 +385,8 @@ export interface Exclusion {
   day: DayKey;
   slot: Slot;
   reasons: ExclusionReason[];
+  /** Score the option would have if only the risk colour were missing (to rank tours awaiting a colour). */
+  potential?: number;
 }
 
 export interface SuggestionResult {

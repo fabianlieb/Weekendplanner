@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDb, type WeekendPlan } from '../../data/db';
 import { HERE, chosenSuggestion, computeSuggestions, currentWeekendPlan, feedbackWeekend, needsAutoCompute, resolveStartPoint } from '../../data/planner';
+import { getCatalog } from '../../data/catalog';
 import { DEFAULT_INPUT, getLastInput, getProfile, getWeekendPlan, listCandidates, riskEntriesOn, saveLastInput } from '../../data/repositories';
 import { asksTrainedGroup } from '../../engine/profile';
 import { needsAvalancheRating } from '../../engine/risk';
@@ -45,7 +46,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
   const [panel, setPanel] = useState(false);
   const [colours, setColours] = useState(params.colours === '1');
   const [coloursChanged, setColoursChanged] = useState(false);
-  const [colourCount, setColourCount] = useState(0);
+  const [coloured, setColoured] = useState<Candidate[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [error, setError] = useState<string>();
@@ -53,7 +54,8 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
 
   const countColours = async (candidates: Candidate[]) => {
     const entries = await riskEntriesOn(db, today);
-    setColourCount(candidates.filter((c) => c.active && needsAvalancheRating(c) && entries.some((e) => e.candidateId === c.id)).length);
+    const ids = new Set(entries.map((e) => e.candidateId));
+    setColoured(candidates.filter((c) => needsAvalancheRating(c) && ids.has(c.id)));
   };
 
   const compute = async (inp: WeekendInput, profile: Profile) => {
@@ -89,7 +91,9 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
     if (started.current) return;
     started.current = true;
     void (async () => {
-      const [profile, last, candidates, existing] = await Promise.all([getProfile(db), getLastInput(db), listCandidates(db), currentWeekendPlan(db)]);
+      const [profile, last, own, catalog, existing] = await Promise.all([getProfile(db), getLastInput(db), listCandidates(db), getCatalog(db), currentWeekendPlan(db)]);
+      // Own list + catalogue, for lookups (plan card, colours, radar). The planner preselects its pool itself.
+      const candidates = [...own, ...catalog];
       // Feedback prompt: Sunday evening to Wednesday, if last weekend had a chosen plan without feedback.
       const fbWeekend = feedbackWeekend(today);
       const wd = weekday(today);
@@ -138,10 +142,9 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
   ].join(' · ');
 
   const chosen = plan ? chosenSuggestion(plan) : undefined;
-  const allTours = candidates.filter((c) => c.active && profile.activities[c.kind === 'ski_tour' ? 'ski_tour' : 'snowshoe'].enabled && needsAvalancheRating(c));
   const awaiting = (plan?.awaitingColour ?? []).map((id) => candidates.find((c) => c.id === id)).filter((c): c is Candidate => !!c);
   // Tours waiting for a colour first; if none wait, all tours (to correct an entry).
-  const colourTours = awaiting.length ? awaiting : allTours;
+  const colourTours = awaiting.length ? awaiting : coloured;
 
   return (
     <>
@@ -239,7 +242,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
         </div>
       )}
 
-      {allTours.length > 0 && (
+      {colourTours.length > 0 && (
         <div className={`colour-block${awaiting.length ? ' due' : ''}`}>
           <button type="button" className="colour-head" aria-expanded={colours} onClick={() => setColours(!colours)}>
             <span className="small grow">
@@ -249,7 +252,7 @@ export function WeekendView({ params }: { params: Record<string, string> }) {
                 </>
               ) : (
                 <>
-                  Skitourenguru-Farben von heute: {colourCount} von {allTours.length}
+                  Skitourenguru-Farben von heute: {coloured.length} eingetragen
                 </>
               )}
             </span>

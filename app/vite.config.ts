@@ -34,7 +34,9 @@ export default defineConfig({
       },
       workbox: {
         // App shell offline; weather and plans live in IndexedDB (no runtime caching of API calls).
-        globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg}'],
+        // routes.json = route catalogue (about 1.4 MB, so it works offline too)
+        globPatterns: ['**/*.{js,css,html,woff,woff2,png,svg,json}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: 'index.html',
         // Generated calendar files are not app pages.
         navigateFallbackDenylist: [/\/calendar\/[^/]+\.ics$/],

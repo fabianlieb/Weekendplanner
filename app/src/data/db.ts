@@ -61,6 +61,15 @@ export interface WeekendPlan {
   startPoint?: StartPoint;
 }
 
+/** The user's markings for a catalogue entry. */
+export interface CatalogStateRow {
+  id: string;
+  favorite?: boolean;
+  done?: boolean;
+  /** Never suggest this catalogue entry. */
+  hidden?: boolean;
+}
+
 export interface WeatherCacheRow {
   /** Point key, see `pointKey`. */
   key: string;
@@ -75,6 +84,7 @@ export class PlannerDB extends Dexie {
   feedback!: Table<Feedback, string>;
   weekendPlans!: Table<WeekendPlan, string>;
   weatherCache!: Table<WeatherCacheRow, string>;
+  catalogState!: Table<CatalogStateRow, string>;
 
   constructor(name = 'wochenend-planer') {
     super(name);
@@ -86,6 +96,7 @@ export class PlannerDB extends Dexie {
       weekendPlans: 'weekend',
       weatherCache: 'key, fetchedAt',
     });
+    this.version(2).stores({ catalogState: 'id' });
   }
 }
 

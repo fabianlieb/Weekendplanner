@@ -4,6 +4,9 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Monthly: refresh the route catalogue (swisstopo/SAC, ASTRA) and redeploy.
+  schedule:
+    - cron: '0 4 1 * *'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +33,11 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npm test
+      - name: Refresh route catalogue
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        # On failure the committed catalogue snapshot is used.
+        continue-on-error: true
+        run: node scripts/build-catalog.mjs
       - name: Build
         run: npm run build
         env:
